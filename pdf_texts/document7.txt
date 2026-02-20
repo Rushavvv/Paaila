@@ -1,0 +1,93 @@
+Week1:ProgrammingFundamentals&Tools
+ProgrammingFoundations(Python)
+CoreConcepts:Algorithms(sequence,selection,iteration),problemdecomposition,variables,
+datatypes.
+Skills:
+ Writesimpleprogramswithcorrectsyntax.
+ Debugandtestcodeeffectively.
+ Useobject-orientedprogramming(classes,objects,methods).
+ Outcome:Abilitytothinkalgorithmicallyandbuildreusableprogramconstructs.
+Goals:
+ LearnprogrammingbasicsinPython
+ Debuggingwithprintandexceptions.
+ Exercises:Smallproblems(FizzBuzz,palindromecheck,factorial).
+ GetfamiliarwithGit/GitHub
+ Understandhowtowriteclean,modularcode
+Topics:
+ Variables,datatypes,operators
+ Controlstructures(if,loops,switch)
+ Functions,recursion,errorhandling
+ Object-OrientedProgrammingbasics(classes,objects,inheritance)
+ Gitbasics(clone,commit,push,pull,branch)
+ IDEsetup(VSCode,linting,formatting)
+Hands-On:
+ Writesimpleprograms(calculator,numberguessinggame)
+ PushcodetoGitHubrepodaily
+ Smallassignment:CreateaCLITo-Doappwithfile-basedstorageWeek2:Databases&DataHandling
+Database&WebApplications
+DatabaseSkills:
+ Conceptualmodeling→relationaldesign.
+ SQLqueryingforretrievalandmanipulation.
+ WebAppSkills:
+ Useframeworks(e.g.,Flask,Bootstrap).
+ Connectbackendlogicwithdatabase.
+ UnderstandMVCpattern.
+ Outcome:Buildandquerydatabases,thenintegratethemintowebapps.
+Goals:
+ Understandrelationaldatabases
+ LearnSQLqueries
+ Connectbackendcodetoadatabase
+ Topics:
+ Databasefundamentals(tables,keys,normalization)
+ CRUDoperationsinSQL
+ Joins,aggregations,indexes
+ IntrotoNoSQL(MongoDBbasics)
+ ConnectingDBwithcode(e.g.,Python+SQLite/PostgreSQL,orNode.js+MongoDB)
+Hands-On:
+ Createa“LibraryManagementSystem”DB(books,users,borrowhistory)
+ WriteSQLqueriesforCRUD+joins
+ BuildascriptthatconnectstoDBandperformsoperationsWeek3:Backend&APIDevelopment
+Goals:
+ LearnHTTPbasics
+ BuildandtestRESTAPIs
+ Understandrequest/responsecycle
+Topics:
+ HTTPmethods(GET,POST,PUT,DELETE)
+ RESTprinciples&bestpractices
+ IntrotoFastAPI(Python)orExpress.js(Node.js)
+ APIauthenticationbasics(JWT,session)
+ Postman/ThunderClientfortestingAPIs
+Hands-On:
+ BuildaRESTAPIfortheLibraryManagementSystem
+ Endpoints:/books,/users,/borrow
+ Implementauthentication(basicJWT)
+ExpectedOutput
+ MiniAPIProject:
+ Endpoints:
+ POST/users(adduser)
+ GET/users(listusers)
+ GET/users/{id}(fetchuserbyID)
+ Stores/retrievesdatafromdatabase.
+ APIDocumentation(READMEwithendpoints&samplerequests)Week4:SystemDesign&Integration
+Goals:
+ Learnbackendarchitecture&scalingconcepts
+ Getexposuretomessagequeues,caching,deploymentbasics
+Topics:
+ MonolithicvsMicroservices
+ Systemdesignpatterns(client-server,MVC)
+ Caching(Redisbasics)
+ Messagequeues(RabbitMQ/Kafkabasics)
+ CleanArchitecture
+ Logging&errorhandling
+ Deploymentintro(Dockerbasics,deployingtoHeroku/Render)
+Hands-On:
+ ExtendtheLibraryAPIwithcachingforfrequentlyaccesseddata
+ Addbackgroundjobsimulation(e.g.,sendemailonborrow)
+ Prepareaminisystemdesigndoc(diagrams+explanation)FinalDeliverables
+GitHubRepowith:
+ Week1:Pythonbasicsprograms.
+ Week2:OOP+Databaseschema/queries.
+ Week3:APIwithDBintegration.
+ Week4:Finalproject
+ Documentation(READMEs,ERdiagrams,APIdocs).
+ Aminiportfolioprojecttoshowforbackendbasics

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Chatbot</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-image: url('/static/image/bg.jpeg');
+      background-position: center;
+      background-repeat: no-repeat;
+      color: #e0e6ed;
+      min-height: 100vh;
+    }
+
+    .menu-button {
+      position: fixed;
+      top: 10px;
+      left: -810px;
+      background: none;
+      color: black;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 30px;
+      cursor: pointer;
+      z-index: 1000;
+    }
+
+    .sidebar {
+      position: fixed;
+      left: -300px;
+      top: 0;
+      width: 300px;
+      background: #15293d;
+      border-right: 1px solid #1b4965;
+      padding: 30px;
+      min-height: 100vh;
+      z-index: 999;
+      transition: left 0.3s ease;
+    }
+
+    .sidebar.open {
+      left: 0;
+    }
+
+    .sidebar h2 {
+      color: #1b4965;
+      margin-bottom: 20px;
+      margin-top: 40px;
+      font-size: 1.5em;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #5a7a95;
+      font-weight: 500;
+      font-size: 0.95em;
+    }
+
+    input[type="file"],
+    select {
+      width: 100%;
+      padding: 10px;
+      background: #0d1b2a;
+      border: 2px solid #1b4965;
+      border-radius: 6px;
+      color: #e0e6ed;
+      font-size: 1em;
+      cursor: pointer;
+    }
+
+    input[type="file"]:focus,
+    select:focus {
+      outline: none;
+      border-color: #2d5f7f;
+    }
+
+    button {
+      background: #1b4965;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 6px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .note {
+      color: #5a7a95;
+      font-size: 0.9em;
+      font-style: italic;
+      margin-top: 10px;
+      padding: 10px;
+      background: #0d1b2a;
+      border-left: 3px solid #1b4965;
+      border-radius: 4px;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 998;
+      display: none;
+    }
+
+    .overlay.active {
+      display: block;
+    }
+
+    .main-content {
+      padding: 80px 40px 40px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .header h1 {
+      font-size: 2.5em;
+      color: #1b4965;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: #5a7a95;
+      font-size: 1.1em;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .input-section {
+      margin-bottom: 30px;
+    }
+
+    .input-group {
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #5a7a95;
+      font-weight: 500;
+      font-size: 0.95em;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: #15293d;
+      border: 2px solid #1b4965;
+      border-radius: 6px;
+      color: #e0e6ed;
+      font-size: 1em;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: #2d5f7f;
+    }
+
+    input[type="text"]::placeholder {
+      color: #3a4a5a;
+    }
+
+    .ask-button {
+      width: auto;
+      padding: 12px 40px;
+      margin-top: 10px;
+    }
+
+    .answer-section h2 {
+      color: #1b4965;
+      margin-top: -20px;
+      margin: 10px;
+      font-size: 1.5em;
+    }
+
+    .summary-box {
+      background-color: #15293d;
+      padding: 15px;
+      border-radius: 6px;
+      min-height: 100px;
+      margin-bottom: 20px;
+      color: #e0e6ed;
+      white-space: pre-wrap;
+    }
+
+    .chat-bubble {
+      display: inline-block;
+      background-color: #1b4965;
+      color: #e0e6ed;
+      padding: 12px 18px;
+      margin: 10px 0;
+      border-radius: 20px;
+      max-width: 70%;
+      word-wrap: break-word;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .chat-bubble.user {
+      background-color: #0d1b2a;
+      align-self: flex-end;
+    }
+
+    .chat-bubble.bot {
+      background-color: #1b4965;
+      align-self: flex-start;
+    }
+
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+    }
+
+    @media (max-width: 768px) {
+      .main-content {
+        padding: 80px 20px 20px 20px;
+      }
+      .header h1 {
+        font-size: 2em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel">
+    const { useEffect, useRef, useState } = React;
+
+    function App() {
+      const [menuOpen, setMenuOpen] = useState(false);
+      const [documents, setDocuments] = useState([]);
+      const [selectedDoc, setSelectedDoc] = useState("");
+      const [summaryText, setSummaryText] = useState("Select a document to view its summary...");
+      const [question, setQuestion] = useState("");
+      const [chatMessages, setChatMessages] = useState([]);
+      const fileInputRef = useRef(null);
+
+      const toggleMenu = () => {
+        setMenuOpen((prev) => !prev);
+      };
+
+      const loadDocuments = async () => {
+        try {
+          const response = await fetch("http://127.0.0.1:8000/documents/");
+          if (!response.ok) {
+            const errText = await response.text();
+            console.error("Error response body:", errText);
+            throw new Error("Failed to fetch documents");
+          }
+
+          const data = await response.json();
+          setDocuments(data.documents || []);
+        } catch (error) {
+          console.error("Fetch error:", error);
+          alert("Error loading documents!");
+        }
+      };
+
+      useEffect(() => {
+        loadDocuments();
+      }, []);
+
+      useEffect(() => {
+        if (!selectedDoc) {
+          setSummaryText("Select a document to view its summary...");
+          return;
+        }
+
+        const fetchSummary = async () => {
+          setSummaryText("Generating summary...");
+          try {
+            const response = await fetch("http://127.0.0.1:8000/summarize/", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                document_id: selectedDoc,
+              }),
+            });
+
+            const data = await response.json();
+            setSummaryText(data.summary || "No summary available.");
+          } catch (error) {
+            console.error(error);
+            setSummaryText("Error generating summary.");
+          }
+        };
+
+        fetchSummary();
+      }, [selectedDoc]);
+
+      const uploadPDF = async () => {
+        const fileInput = fileInputRef.current;
+        if (!fileInput || !fileInput.files.length) {
+          alert("Please select a PDF first!");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", fileInput.files[0]);
+
+        const response = await fetch("http://127.0.0.1:8000/upload/", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+        alert(`Upload successful! Your Document ID is: ${data.document_id}`);
+        await loadDocuments();
+      };
+
+      const askQuestion = async () => {
+        if (!selectedDoc || !question) {
+          alert("Please enter both Document ID and question!");
+          return;
+        }
+
+        const userId = `user-${Date.now()}`;
+        const loadingId = `loading-${Date.now()}`;
+
+        setChatMessages((prev) => [
+          { id: loadingId, type: "bot", text: "Loading..." },
+          { id: userId, type: "user", text: question },
+          ...prev,
+        ]);
+
+        try {
+          const response = await fetch("http://127.0.0.1:8000/chat/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              document_id: selectedDoc,
+              question: question,
+            }),
+          });
+
+          if (!response.ok) {
+            const err = await response.json();
+            alert(`Error: ${err.detail || response.status}`);
+            setChatMessages((prev) => prev.filter((msg) => msg.id !== loadingId));
+            return;
+          }
+
+          const data = await response.json();
+          setChatMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === loadingId ? { ...msg, text: data.answer } : msg
+            )
+          );
+          setQuestion("");
+        } catch (error) {
+          console.error(error);
+          alert("Failed to get answer!");
+          setChatMessages((prev) => prev.filter((msg) => msg.id !== loadingId));
+        }
+      };
+
+      return (
+        <>
+          <button className="menu-button" onClick={toggleMenu}>
+            {menuOpen ? "✕" : "☰"}
+          </button>
+
+          <div
+            className={`overlay ${menuOpen ? "active" : ""}`}
+            onClick={toggleMenu}
+          />
+
+          <div className={`sidebar ${menuOpen ? "open" : ""}`}>
+            <h2>Upload PDF</h2>
+            <div className="form-group">
+              <input type="file" ref={fileInputRef} accept=".pdf" />
+            </div>
+            <button onClick={uploadPDF}>Upload Document</button>
+            <p className="note">After upload, note down the Document ID provided.</p>
+          </div>
+
+          <div className="main-content">
+            <div className="header">
+              <h1>PDF Chatbot</h1>
+              <p>Upload your PDF and ask questions</p>
+            </div>
+
+            <div className="summary-section">
+              <h2>Summary:</h2>
+              <div className="summary-box">{summaryText}</div>
+            </div>
+
+            <div className="chat-container">
+              <div className="input-section">
+                <div className="input-group">
+                  <label>Select Document:</label>
+                  <select
+                    value={selectedDoc}
+                    onChange={(event) => setSelectedDoc(event.target.value)}
+                  >
+                    <option value="">-- Select a document --</option>
+                    {documents.map((doc) => (
+                      <option key={doc} value={doc}>
+                        {doc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Question:</label>
+                  <input
+                    type="text"
+                    value={question}
+                    onChange={(event) => setQuestion(event.target.value)}
+                    placeholder="Ask your question"
+                  />
+                </div>
+                <button className="ask-button" onClick={askQuestion}>
+                  Ask Question
+                </button>
+              </div>
+
+              <div className="answer-section">
+                <h2>Answer:</h2>
+                <div className="chat-messages">
+                  {chatMessages.map((msg) => (
+                    <div key={msg.id} className={`chat-bubble ${msg.type}`}>
+                      {msg.text}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<App />);
+  </script>
+</body>
+</html>
