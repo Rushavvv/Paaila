@@ -1,6 +1,6 @@
 # PDF Chatbot
 
-A web-based chatbot that allows users to upload PDFs and ask questions about the document. The chatbot uses Google Vertex AI Generative API via LangChain to generate answers from PDF content. The frontend displays responses in a modern chat-bubble interface similar to WhatsApp or Instagram.
+A web-based chatbot that allows users to upload PDFs and ask questions about the document. The chatbot uses a local pretrained Llama3.2 model via LangChain to generate answers from PDF content. The frontend displays responses in a modern chat-bubble interface similar to WhatsApp or Instagram.
 
 ---
 
@@ -17,9 +17,9 @@ A web-based chatbot that allows users to upload PDFs and ask questions about the
 
 ## Tech Stack
 
-- **Frontend:** HTML, CSS, JavaScript  
+- **Frontend:** React.js  
 - **Backend:** FastAPI  
-- **PDF Processing & Chat:** Python, LangChain, Google Vertex AI Generative API  
-- **Hosting / Local Development:** Runs locally on `http://127.0.0.1:8000/`
+- **PDF Processing & Chat:** Python, LangChain 
+- **Hosting / Local Development:** Runs locally on `http://127.0.0.1:8000/` can be run through SwaggerUI
 
 ---
