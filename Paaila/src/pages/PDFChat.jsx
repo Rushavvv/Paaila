@@ -146,8 +146,9 @@ function PDFChat() {
             </button>
           </div>
           <div className="menu-links">
-            <a href="/" className="menu-link">Home</a>
+            <a href="/home" className="menu-link">Home</a>
             <a href="/pdf-chat" className="menu-link active">PDF Chatbot</a>
+            <a href="/resume-parser" className="menu-link">Resume Parser</a>
           </div>
         </div>
       </nav>

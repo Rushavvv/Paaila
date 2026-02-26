@@ -269,12 +269,10 @@ const roadmapData = {
   },
 };
 
-// ─── Helper: slugify role title ────────────────────────────────────────────────
 
 export const toSlug = (title) =>
   title.toLowerCase().replace(/\s+/g, '-');
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
 
 function Tag({ label, nodeId, side, index, done, onToggle }) {
   const key = side ? `${nodeId}-side-${index}` : `${nodeId}-child-${index}`;
@@ -328,10 +326,9 @@ function Node({ node, done, onToggle }) {
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
 
 const RoadmapPage = () => {
-  const { role } = useParams();           // e.g. "frontend-developer"
+  const { role } = useParams();           
   const navigate = useNavigate();
   const [done, setDone] = useState({});
 
@@ -341,14 +338,13 @@ const RoadmapPage = () => {
     return (
       <div className="rm-not-found">
         <h2>Roadmap not found</h2>
-        <button className="rm-back-btn" onClick={() => navigate('/')}>← Back to Home</button>
+        <button className="rm-back-btn" onClick={() => navigate('/home')}>← Back to Home</button>
       </div>
     );
   }
 
   const toggle = (key) => setDone((d) => ({ ...d, [key]: !d[key] }));
 
-  // Count all trackable items
   const allKeys = data.nodes.reduce((acc, n) => {
     acc.push(n.id);
     (n.children || []).forEach((_, i) => acc.push(`${n.id}-child-${i}`));
@@ -365,18 +361,19 @@ const RoadmapPage = () => {
       <nav className="menu-bar">
         <div className="menu-container">
           <div className="menu-logo">
-            <span className="logo-text">Career Roadmap</span>
+            <span className="logo-text">Paaila</span>
           </div>
           <div className="menu-links">
-            <a href="/" className="menu-link">Home</a>
+            <a href="/home" className="menu-link">Home</a>
             <a href="http://localhost:5173/chat" className="menu-link">PDF Chatbot</a>
+            <a href="http://localhost:5173/resume-parser" className="menu-link">Resume Parser</a>
           </div>
         </div>
       </nav>
 
       {/* Page header */}
       <div className="rm-header">
-        <button className="rm-back-btn" onClick={() => navigate('/')}>
+        <button className="rm-back-btn" onClick={() => navigate('/home')}>
           ← Back
         </button>
         <div className="rm-title-block">

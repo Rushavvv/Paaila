@@ -22,7 +22,6 @@ const RoadmapHome = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     console.log(`Searching for: ${searchQuery}`);
-    // Add your search logic here
   };
 
   return (
@@ -30,11 +29,12 @@ const RoadmapHome = () => {
       <nav className="menu-bar">
         <div className="menu-container">
           <div className="menu-logo">
-            <span className="logo-text">Career Roadmap</span>
+            <span className="logo-text">Paaila</span>
           </div>
           <div className="menu-links">
-            <a href="/" className="menu-link active">Home</a>
+            <a href="/home" className="menu-link active">Home</a>
             <a href="http://localhost:5173/chat" className="menu-link">PDF Chatbot</a>
+            <a href="http://localhost:5173/resume-parser" className="menu-link">Resume Parser</a>
           </div>
         </div>
       </nav>

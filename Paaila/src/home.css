@@ -51,7 +51,7 @@
 .logo-text {
   font-size: 1.5rem;
   font-weight: bold;
-  color: #2563eb;
+  color: #000000;
 }
 
 .menu-links {
@@ -171,7 +171,7 @@
 /* Role Cards Section */
 .roles-wrapper {
   width: 100%;
-  max-width: calc(768px * 1.2); /* 20% wider than search bar */
+  max-width: calc(768px * 1.2); 
   margin-bottom: 48px;
 }
 
