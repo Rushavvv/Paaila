@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, Depends
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, Depends, Header, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +8,7 @@ from models.summary import SummaryRequest
 from models.database import init_db, get_db, SessionLocal
 from models.schemas import RegisterRequest, LoginRequest, AuthResponse, UserResponse
 from models.user import User
+from models.storage import Document, Resume, ChatHistory
 import random
 import os
 from pathlib import Path
@@ -18,6 +19,10 @@ import bcrypt
 from datetime import datetime, timedelta
 import jwt
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
+from typing import Optional
+import io
+import uuid
 
 
 # Configuration
@@ -46,6 +51,45 @@ def create_jwt_token(user_id: int, email: str) -> str:
         'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+
+
+def _extract_bearer_token(authorization: Optional[str]) -> Optional[str]:
+    if not authorization:
+        return None
+    if not authorization.lower().startswith("bearer "):
+        return None
+    return authorization.split(" ", 1)[1].strip()
+
+
+def get_current_user_optional(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    token = _extract_bearer_token(authorization)
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
+        return None
+
+    user_id = payload.get("user_id")
+    email = payload.get("email")
+    if not user_id or not email:
+        return None
+
+    return db.query(User).filter(User.id == user_id, User.email == email).first()
+
+
+def get_current_user(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db)
+) -> User:
+    user = get_current_user_optional(authorization=authorization, db=db)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    return user
 
 app = FastAPI()
 
@@ -106,68 +150,225 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     }
 
 
+@app.post("/api/login", response_model=AuthResponse)
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    """Authenticate user and return JWT token."""
+    user = db.query(User).filter(User.email == request.email).first()
+    if not user or not verify_password(request.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = create_jwt_token(user.id, user.email)
+    return {
+        "token": token,
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "created_at": user.created_at
+        }
+    }
+
+
 @app.post("/resumeParser/")
-async def resume_parser(file: UploadFile):
+async def resume_parser(
+    file: UploadFile,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-    document_id = str("document" + str(random.randint(0, 100)))
+    resume_id = f"resume_{uuid.uuid4().hex[:12]}"
+    pdf_file_path = RESUME_UPLOAD_DIR / f"{resume_id}.pdf"
+    text_file_path = PDF_TEXT_DIR / f"{resume_id}.txt"
 
-    text = await save_pdf_text(file, document_id + ".txt")
+    text = await save_pdf_text(file, pdf_file_path, text_file_path)
 
-    return {"document_id": document_id, "message": f"PDF processed, {len(text)} characters extracted"}
+    resume_record = Resume(
+        user_id=current_user.id if current_user else None,
+        resume_id=resume_id,
+        original_filename=file.filename,
+        file_path=str(pdf_file_path),
+        text_path=str(text_file_path)
+    )
+    db.add(resume_record)
+    db.commit()
+    db.refresh(resume_record)
+
+    return {
+        "resume_id": resume_id,
+        "message": f"Resume processed, {len(text)} characters extracted",
+        "file_path": str(pdf_file_path),
+        "text_path": str(text_file_path)
+    }
 
 
 @app.post("/chat/")
-async def chat_pdf(request: ChatRequest):
+async def chat_pdf(
+    request: ChatRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     print(request.document_id, request.question)
     answer = answer_question_ollama(request.document_id, request.question)
     print("Answer:", answer)
     if not answer:
         raise HTTPException(status_code=404, detail="Document not found or not processed")
+
+    chat_row = ChatHistory(
+        user_id=current_user.id if current_user else None,
+        document_id=request.document_id,
+        question=request.question,
+        answer=answer
+    )
+    db.add(chat_row)
+    db.commit()
+
     return {"answer": answer}
 
 
 @app.post("/upload/")
-async def upload_pdf(file: UploadFile):
+async def upload_pdf(
+    file: UploadFile,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
     # Generate unique document_id
-    document_id = str("document" + str(random.randint(0, 100)))
+    document_id = f"document_{uuid.uuid4().hex[:12]}"
+    pdf_file_path = PDF_UPLOAD_DIR / f"{document_id}.pdf"
+    text_file_path = PDF_TEXT_DIR / f"{document_id}.txt"
 
-    # Save PDF text
-    text = await save_pdf_text(file, document_id + ".txt")
+    # Save PDF file + extracted text
+    text = await save_pdf_text(file, pdf_file_path, text_file_path)
 
-    return {"document_id": document_id, "message": f"PDF processed, {len(text)} characters extracted"}
+    document_record = Document(
+        user_id=current_user.id if current_user else None,
+        document_id=document_id,
+        original_filename=file.filename,
+        file_path=str(pdf_file_path),
+        text_path=str(text_file_path)
+    )
+    db.add(document_record)
+    db.commit()
+    db.refresh(document_record)
+
+    return {
+        "document_id": document_id,
+        "message": f"PDF processed, {len(text)} characters extracted",
+        "file_path": str(pdf_file_path),
+        "text_path": str(text_file_path)
+    }
 
 
 PDF_TEXT_DIR = Path("pdf_texts")
 PDF_TEXT_DIR.mkdir(exist_ok=True)
 
+PDF_UPLOAD_DIR = Path("uploads/pdfs")
+PDF_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+RESUME_UPLOAD_DIR = Path("uploads/resumes")
+RESUME_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
 pdf_text_store = {}
 
 @app.get("/documents/")
-def list_documents():
-    files = [f for f in os.listdir(PDF_TEXT_DIR) if f.endswith(".txt")]
-    print(files)
-    return {"documents": files}
+def list_documents(
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    query = db.query(Document)
+    if current_user:
+        query = query.filter(Document.user_id == current_user.id)
+
+    rows = query.order_by(desc(Document.created_at)).all()
+    documents = [row.document_id for row in rows]
+    return {
+        "documents": documents,
+        "items": [
+            {
+                "document_id": row.document_id,
+                "original_filename": row.original_filename,
+                "file_path": row.file_path,
+                "text_path": row.text_path,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ]
+    }
 
 
-async def save_pdf_text(file: UploadFile, document_id: str):
-    """Extract text from uploaded PDF and save as a .txt file."""
-    reader = PdfReader(file.file)
+@app.get("/resumes/")
+def list_resumes(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    rows = (
+        db.query(Resume)
+        .filter(Resume.user_id == current_user.id)
+        .order_by(desc(Resume.created_at))
+        .all()
+    )
+    return {
+        "resumes": [
+            {
+                "resume_id": row.resume_id,
+                "original_filename": row.original_filename,
+                "file_path": row.file_path,
+                "text_path": row.text_path,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ]
+    }
+
+
+async def save_pdf_text(file: UploadFile, pdf_file_path: Path, text_file_path: Path):
+    """Save uploaded PDF and extracted text to disk."""
+    content = await file.read()
+
+    with open(pdf_file_path, "wb") as pdf_file:
+        pdf_file.write(content)
+
+    reader = PdfReader(io.BytesIO(content))
     text = ""
     for page in reader.pages:
         page_text = page.extract_text()
         if page_text:
             text += page_text
 
-    text_file_path = PDF_TEXT_DIR / f"{document_id}"
     with open(text_file_path, "w", encoding="utf-8") as f:
         f.write(text)
 
     return text
+
+
+@app.get("/chat/history")
+def get_chat_history(
+    document_id: Optional[str] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    query = db.query(ChatHistory).filter(ChatHistory.user_id == current_user.id)
+    if document_id:
+        query = query.filter(ChatHistory.document_id == document_id)
+
+    rows = query.order_by(desc(ChatHistory.created_at)).limit(limit).all()
+    return {
+        "history": [
+            {
+                "id": row.id,
+                "document_id": row.document_id,
+                "question": row.question,
+                "answer": row.answer,
+                "created_at": row.created_at,
+            }
+            for row in rows
+        ]
+    }
 
 @app.post("/summarize/")
 async def summarize(request: SummaryRequest):

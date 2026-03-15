@@ -293,7 +293,7 @@ function StepResume({ onNext }) {
           <div style={{ fontSize: 32, marginBottom: 12 }}>📄</div>
           <p style={{ fontFamily: "var(--syne)", fontWeight: 600, marginBottom: 6 }}>Use Existing</p>
           <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.05em" }}>
-            Alexandra Chen — Sr. Product Designer
+            Rushav Sthapit — Sr. AI Engineer
           </p>
           {loaded && (
             <p style={{ fontSize: 10, color: "var(--green)", marginTop: 8, letterSpacing: "0.1em" }}>✓ Loaded</p>
@@ -828,9 +828,9 @@ function TabTailored({ applied, overallScore }) {
 
       <div className="resume-doc">
         <div className="resume-doc__header">
-          <h1 style={{ fontFamily: "var(--syne)", fontSize: 30, fontWeight: 800, marginBottom: 4 }}>Alexandra Chen</h1>
+          <h1 style={{ fontFamily: "var(--syne)", fontSize: 30, fontWeight: 800, marginBottom: 4 }}>Rushav Sthapit</h1>
           <p style={{ fontSize: 14, color: accent, marginBottom: 16, letterSpacing: "0.08em" }}>
-            Senior UX Designer — Fintech & Developer-Facing Products
+            Senior AI Engineer — Paaila 
           </p>
           <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 10, color: "#8A8FA0", letterSpacing: "0.05em" }}>
             {["✉ alex.chen@email.com", "☏ +1 (415) 882-7341", "⌘ San Francisco, CA", "↗ linkedin.com/in/alexchen"].map(i => (
@@ -1010,7 +1010,6 @@ function TopBar({ step }) {
   );
 }
 
-// ─── Root App ─────────────────────────────────────────────────────────────────
 export default function Paaila() {
   const [step, setStep] = useState("resume");
 

@@ -19,9 +19,14 @@ async def save_pdf_text(file, document_id):
     return text
 
 def load_pdf_text(document_id): # Function to load the text of a PDF document given its document_id.
-    path = PDF_STORAGE / f"{document_id}"
-    if not path.exists():
-        return None
-    with open(path, "r", encoding="utf-8") as f:
-        text = f.read()
-        return text
+    candidates = [
+        PDF_STORAGE / f"{document_id}",
+        PDF_STORAGE / f"{document_id}.txt",
+    ]
+
+    for path in candidates:
+        if path.exists():
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
+
+    return None
