@@ -26,7 +26,7 @@ import uuid
 
 
 # Configuration
-JWT_SECRET_KEY = "your_secret_key_change_this_in_production"
+JWT_SECRET_KEY = "secret_key"
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
