@@ -64,7 +64,6 @@ function PDFChat() {
     if (!selectedDoc) { setSummaryText(''); return }
     const fetchSummary = async () => {
       setSummaryLoading(true)
-      setSummaryText('')
       try {
         const response = await fetch('http://127.0.0.1:8000/summarize/', {
           method: 'POST',
@@ -167,7 +166,7 @@ function PDFChat() {
           </div>
           <div className="menu-links">
             <a href="/home"          className="menu-link">Home</a>
-            <a href="/pdf-chat"      className="menu-link active">PDF Chatbot</a>
+            <a href="/chat"          className="menu-link active">PDF Chatbot</a>
             <a href="/resume-parser" className="menu-link">Resume Parser</a>
           </div>
         </div>
@@ -212,9 +211,10 @@ function PDFChat() {
           <div className="summary-section">
             <p className="section-title">Document Summary</p>
             <div className={`summary-box${summaryLoading ? ' loading' : ''}`}>
-              {summaryLoading
+              {summaryLoading}
+              {summaryText || (summaryLoading
                 ? 'Generating summary...'
-                : summaryText || 'Select a document to view its AI-generated summary.'}
+                : 'Select a document to view its summary.')}
             </div>
           </div>
 

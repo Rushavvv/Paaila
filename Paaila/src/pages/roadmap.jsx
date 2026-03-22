@@ -253,7 +253,6 @@ const RoadmapPage = () => {
     const next = !d[key];
     const updates = { [key]: next };
 
-    // If the toggled key is a parent node id, cascade to all its children and side tags
     const parentNode = data.nodes.find((n) => n.id === key);
     if (parentNode) {
       (parentNode.children || []).forEach((_, i) => {

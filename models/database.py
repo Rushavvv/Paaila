@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import NullPool
 import os
@@ -28,5 +28,14 @@ def get_db():
         db.close()
 
 def init_db():
-    """Create all database tables."""
+    """Create all database tables and apply lightweight schema updates."""
     Base.metadata.create_all(bind=engine)
+
+    # Backfill for existing deployments that already have a users table.
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS "userType" VARCHAR(20) NOT NULL DEFAULT \''
+                'normal\''
+            )
+        )

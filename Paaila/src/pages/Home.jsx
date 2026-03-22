@@ -9,16 +9,11 @@ const RoadmapHome = () => {
   const [searchMessage, setSearchMessage] = useState('');
   const navigate = useNavigate();
 
-  // Shown as cards on the home page
-  const roles = [
+  const allRoles = [
     { id: 1, title: 'Data Analyst',        icon: '📊', meta: 'Analytics · SQL · Python'     },
     { id: 2, title: 'Frontend Developer',  icon: '💻', meta: 'React · CSS · JavaScript'      },
     { id: 3, title: 'Backend Developer',   icon: '⚙️', meta: 'Node · APIs · Databases'       },
     { id: 4, title: 'Software Engineer',   icon: '🚀', meta: 'Systems · DSA · Architecture'  },
-  ];
-
-  // Search-only roles (not shown as cards)
-  const hiddenRoles = [
     { id: 5,  title: 'DevOps Engineer',             icon: '🔧', meta: 'CI/CD · Docker · Cloud'           },
     { id: 6,  title: 'Machine Learning Engineer',   icon: '🤖', meta: 'ML · Python · TensorFlow'         },
     { id: 7,  title: 'UI/UX Designer',              icon: '🎨', meta: 'Figma · Wireframes · Prototyping'  },
@@ -26,10 +21,22 @@ const RoadmapHome = () => {
     { id: 9,  title: 'Cybersecurity Analyst',       icon: '🔒', meta: 'Security · Networks · Pentesting'  },
   ];
 
-  const allSearchableRoles = [...roles, ...hiddenRoles];
+  function shuffle(array) {
+    const arr = array.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  const [randomRoles] = useState(() => shuffle(allRoles).slice(0, 4));
+
+  const allSearchableRoles = allRoles;
 
   const handleRoleClick = (roleTitle) => {
     const slug = toSlug(roleTitle);
+    console.log('Navigating to roadmap slug:', slug);
     navigate(`/roadmap/${slug}`);
   };
 
@@ -148,7 +155,7 @@ const RoadmapHome = () => {
         <div className="roles-wrapper">
           <p className="section-label">Choose a career path</p>
           <div className="roles-grid">
-            {roles.map((role) => (
+            {randomRoles.map((role) => (
               <button
                 key={role.id}
                 onClick={() => handleRoleClick(role.title)}

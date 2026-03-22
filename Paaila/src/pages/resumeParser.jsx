@@ -1,5 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "../resumeParser.css";
+
+const API_BASE = "http://127.0.0.1:8000";
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 // ─── Static mock data ─────────────────────────────────────────────────────────
 const MOCK_JOB = `Senior UX Designer — Stripe
@@ -20,27 +27,6 @@ Requirements:
 • Strong understanding of accessibility (WCAG 2.1)
 • Excellent communication and storytelling skills
 • Experience with fintech or developer tools a strong plus`;
-
-const MATCHED_KEYWORDS = [
-  { word: "Figma",                   score: 100 },
-  { word: "User Research",           score: 100 },
-  { word: "Usability Testing",       score: 100 },
-  { word: "Prototyping",             score: 100 },
-  { word: "Design System",           score: 95  },
-  { word: "Accessibility",           score: 90  },
-  { word: "WCAG",                    score: 85  },
-  { word: "Mentoring",               score: 80  },
-  { word: "Stakeholder Presentation",score: 75  },
-];
-
-const MISSING_KEYWORDS = [
-  { word: "Developer Tools",            priority: "high"   },
-  { word: "Fintech",                    priority: "high"   },
-  { word: "Data-Dense UI",             priority: "medium" },
-  { word: "Cross-functional Leadership",priority: "medium" },
-  { word: "Payment Flows",             priority: "low"    },
-  { word: "API Documentation UX",      priority: "low"    },
-];
 
 const SECTION_ANALYSIS = [
   {
@@ -190,8 +176,12 @@ function ScanningOverlay({ onDone }) {
   useEffect(() => {
     const iv    = setInterval(() => setLine(l => (l < phrases.length - 1 ? l + 1 : l)), 420);
     const dv    = setInterval(() => setDots(d => (d.length < 3 ? d + "." : ".")), 350);
-    const timer = setTimeout(onDone, 3200);
-    return () => { clearInterval(iv); clearInterval(dv); clearTimeout(timer); };
+    const timer = onDone ? setTimeout(onDone, 3200) : null;
+    return () => {
+      clearInterval(iv);
+      clearInterval(dv);
+      if (timer) clearTimeout(timer);
+    };
   }, []);
 
   const corners = [
@@ -258,12 +248,134 @@ function ScanningOverlay({ onDone }) {
 
 // ─── Step 1: Load Resume ──────────────────────────────────────────────────────
 function StepResume({ onNext }) {
-  const [loaded,   setLoaded]   = useState(false);
+  const [loaded, setLoaded] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [deletingResumeId, setDeletingResumeId] = useState("");
+  const [resumes, setResumes] = useState([]);
+  const [loadingResumes, setLoadingResumes] = useState(true);
+  const [selectedResumeId, setSelectedResumeId] = useState("");
+  const [pendingResume, setPendingResume] = useState(null);
+  const fileInputRef = useRef(null);
 
-  const simulate = () => {
+  useEffect(() => {
+    let active = true;
+
+    const loadResumes = async () => {
+      setLoadingResumes(true);
+      try {
+        const res = await fetch(`${API_BASE}/resumes/`, {
+          headers: { ...getAuthHeaders() },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to load resumes");
+        }
+
+        const data = await res.json();
+        if (!active) return;
+        setResumes(Array.isArray(data?.resumes) ? data.resumes : []);
+      } catch (err) {
+        console.error("Load resumes error:", err);
+        if (active) setResumes([]);
+      } finally {
+        if (active) setLoadingResumes(false);
+      }
+    };
+
+    loadResumes();
+    return () => { active = false; };
+  }, []);
+
+  const formatDate = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  };
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Please upload a PDF file.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${API_BASE}/resumeParser/`, {
+        method: "POST",
+        headers: { ...getAuthHeaders() },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Resume upload failed");
+      }
+
+      const data = await res.json();
+      const newResume = {
+        resume_id: data.resume_id,
+        original_filename: file.name,
+        file_path: data.file_path,
+        text_path: data.text_path,
+        created_at: new Date().toISOString(),
+      };
+      setResumes((prev) => [newResume, ...prev]);
+      setLoaded(true);
+      setSelectedResumeId(data.resume_id);
+      setTimeout(() => onNext(data.resume_id), 500);
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload/process resume. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUseExisting = (resume) => {
+    if (!resume?.resume_id || uploading || deletingResumeId) return;
+    setPendingResume(resume);
+  };
+
+  const handleChoosePending = () => {
+    if (!pendingResume?.resume_id) return;
+    setSelectedResumeId(pendingResume.resume_id);
     setLoaded(true);
-    setTimeout(onNext, 600);
+    const chosen = pendingResume.resume_id;
+    setPendingResume(null);
+    setTimeout(() => onNext(chosen), 300);
+  };
+
+  const handleDeletePending = async () => {
+    if (!pendingResume?.resume_id) return;
+
+    const targetId = pendingResume.resume_id;
+    setDeletingResumeId(targetId);
+    try {
+      const res = await fetch(`${API_BASE}/resumes/${targetId}`, {
+        method: "DELETE",
+        headers: { ...getAuthHeaders() },
+      });
+      if (!res.ok) {
+        throw new Error("Failed to delete resume");
+      }
+
+      setResumes((prev) => prev.filter((r) => r.resume_id !== targetId));
+      if (selectedResumeId === targetId) {
+        setSelectedResumeId("");
+        setLoaded(false);
+      }
+      setPendingResume(null);
+    } catch (err) {
+      console.error("Delete resume error:", err);
+      alert("Could not delete resume. Please try again.");
+    } finally {
+      setDeletingResumeId("");
+    }
   };
 
   return (
@@ -278,25 +390,113 @@ function StepResume({ onNext }) {
         </p>
       </div>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", animation: "fadeUp .5s .1s ease both" }}>
-        {/* Use existing resume */}
-        <div
-          onClick={simulate}
-          style={{
-            border: "1px solid var(--blue-accent)", background: "var(--blue-accent-d)",
-            padding: "28px 36px", cursor: "pointer", textAlign: "center",
-            transition: "all .25s", width: 240,
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = "var(--blue-accent-m)")}
-          onMouseLeave={e => (e.currentTarget.style.background = "var(--blue-accent-d)")}
-        >
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📄</div>
-          <p style={{ fontFamily: "var(--syne)", fontWeight: 600, marginBottom: 6 }}>Use Existing</p>
-          <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.05em" }}>
-            Rushav Sthapit — Sr. AI Engineer
+      <div style={{ width: "100%", maxWidth: 980, display: "flex", flexDirection: "column", gap: 14, animation: "fadeUp .5s .1s ease both" }}>
+        <div style={{ border: "1px solid var(--border)", background: "var(--panel)", padding: 16 }}>
+          <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 12 }}>
+            Previously Uploaded Resumes
           </p>
-          {loaded && (
-            <p style={{ fontSize: 10, color: "var(--green)", marginTop: 8, letterSpacing: "0.1em" }}>✓ Loaded</p>
+
+          {loadingResumes ? (
+            <p style={{ fontSize: 11, color: "var(--muted2)" }}>Loading resumes...</p>
+          ) : resumes.length === 0 ? (
+            <p style={{ fontSize: 11, color: "var(--muted2)" }}>No previous resumes found. Upload a new one below.</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 10 }}>
+              {resumes.map((resume) => {
+                const active = selectedResumeId === resume.resume_id;
+                return (
+                  <button
+                    key={resume.resume_id}
+                    onClick={() => handleUseExisting(resume)}
+                    type="button"
+                    style={{
+                      textAlign: "left",
+                      background: active ? "var(--blue-accent-d)" : "var(--card)",
+                      border: `1px solid ${active ? "var(--blue-accent)" : "var(--border)"}`,
+                      padding: "12px 14px",
+                      cursor: "pointer",
+                      color: "var(--cream)",
+                      opacity: deletingResumeId && deletingResumeId !== resume.resume_id ? 0.6 : 1,
+                    }}
+                  >
+                    <p style={{ fontFamily: "var(--syne)", fontSize: 12, marginBottom: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {resume.original_filename}
+                    </p>
+                    <p style={{ fontSize: 10, color: "var(--muted2)", marginBottom: 4 }}>
+                      Saved: {formatDate(resume.created_at)}
+                    </p>
+                    <p style={{ fontSize: 9, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {resume.file_path}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {pendingResume && (
+            <div style={{ marginTop: 12, border: "1px solid var(--border2)", background: "var(--card)", padding: 12 }}>
+              <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>
+                Selected Resume
+              </p>
+              <p style={{ fontFamily: "var(--syne)", fontSize: 12, marginBottom: 10 }}>
+                {pendingResume.original_filename}
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button
+                  type="button"
+                  onClick={handleChoosePending}
+                  style={{
+                    background: "var(--blue-accent)",
+                    border: "1px solid var(--blue-accent)",
+                    color: "#fff",
+                    padding: "8px 14px",
+                    fontSize: 10,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  Choose This Resume
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingResumeId === pendingResume.resume_id}
+                  onClick={handleDeletePending}
+                  style={{
+                    background: "var(--red-d)",
+                    border: "1px solid var(--red)",
+                    color: "var(--red)",
+                    padding: "8px 14px",
+                    fontSize: 10,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    opacity: deletingResumeId === pendingResume.resume_id ? 0.6 : 1,
+                  }}
+                >
+                  {deletingResumeId === pendingResume.resume_id ? "Deleting..." : "Delete Resume"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPendingResume(null)}
+                  style={{
+                    background: "none",
+                    border: "1px solid var(--border2)",
+                    color: "var(--muted2)",
+                    padding: "8px 14px",
+                    fontSize: 10,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {loaded && selectedResumeId && (
+            <p style={{ fontSize: 10, color: "var(--green)", marginTop: 10, letterSpacing: "0.1em" }}>✓ Resume selected</p>
           )}
         </div>
 
@@ -304,19 +504,34 @@ function StepResume({ onNext }) {
         <div
           onDragOver={e => { e.preventDefault(); setDragging(true); }}
           onDragLeave={() => setDragging(false)}
-          onDrop={e => { e.preventDefault(); setDragging(false); simulate(); }}
-          onClick={simulate}
+          onDrop={e => {
+            e.preventDefault();
+            setDragging(false);
+            if (!uploading) handleUpload(e.dataTransfer.files?.[0]);
+          }}
+          onClick={() => !uploading && fileInputRef.current?.click()}
           style={{
             border: `1px dashed ${dragging ? "var(--blue-accent)" : "var(--border2)"}`,
             background: dragging ? "var(--blue-accent-d)" : "var(--card)",
             padding: "28px 36px", cursor: "pointer", textAlign: "center",
             transition: "all .25s", width: 240,
+            opacity: uploading ? 0.6 : 1,
           }}
         >
           <div style={{ fontSize: 32, marginBottom: 12, opacity: 0.5 }}>⬆</div>
           <p style={{ fontFamily: "var(--syne)", fontWeight: 600, marginBottom: 6 }}>Upload New</p>
-          <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.05em" }}>PDF · DOCX · TXT</p>
+          <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.05em" }}>
+            {uploading ? "Uploading..." : "PDF Only"}
+          </p>
         </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,application/pdf"
+          style={{ display: "none" }}
+          onChange={(e) => handleUpload(e.target.files?.[0])}
+        />
       </div>
     </div>
   );
@@ -329,6 +544,7 @@ function StepJobDesc({ onNext }) {
   const [tab, setTab] = useState("paste");
 
   const canNext = jd.trim().length > 40 || url.trim().length > 5;
+  const payload = tab === "paste" ? jd.trim() : url.trim();
 
   return (
     <div style={{
@@ -344,27 +560,6 @@ function StepJobDesc({ onNext }) {
         <p style={{ fontSize: 12, color: "var(--muted2)", letterSpacing: "0.04em" }}>
           Paste a JD or provide a URL — our AI will extract every requirement.
         </p>
-      </div>
-
-      {/* Paste / URL toggle */}
-      <div style={{ display: "flex", border: "1px solid var(--border)", width: "100%" }}>
-        {[["paste", "Paste Text"], ["url", "Job URL"]].map(([id, label]) => (
-          <button
-            key={id}
-            onClick={() => setTab(id)}
-            style={{
-              flex: 1, padding: "10px",
-              background: tab === id ? "var(--blue-accent-d)" : "none",
-              border: "none",
-              borderRight: id === "paste" ? "1px solid var(--border)" : "none",
-              color: tab === id ? "var(--blue-accent)" : "var(--muted2)",
-              fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase",
-              cursor: "pointer", transition: "all .2s",
-            }}
-          >
-            {label}
-          </button>
-        ))}
       </div>
 
       {tab === "paste" ? (
@@ -417,7 +612,7 @@ function StepJobDesc({ onNext }) {
       )}
 
       <button
-        onClick={canNext ? onNext : undefined}
+        onClick={canNext ? () => onNext(payload) : undefined}
         className={`btn-primary${canNext ? "" : " btn-primary--disabled"}`}
         style={{
           background: canNext ? "var(--blue-accent)" : "var(--card)",
@@ -426,7 +621,7 @@ function StepJobDesc({ onNext }) {
           cursor: canNext ? "pointer" : "not-allowed",
           alignSelf: "flex-end",
         }}
-        onMouseEnter={e => canNext && (e.target.style.background = "#74B8FF")}
+        onMouseEnter={e => canNext && (e.target.style.background = "#bb7f4d")}
         onMouseLeave={e => canNext && (e.target.style.background = "var(--blue-accent)")}
       >
         Analyse Match →
@@ -436,8 +631,15 @@ function StepJobDesc({ onNext }) {
 }
 
 // ─── Results: Overview Tab ────────────────────────────────────────────────────
-function TabOverview({ applied }) {
-  const overallScore = 74;
+function TabOverview({ applied, analysis }) {
+  if (!analysis) return null;
+
+  const overview = analysis;
+  const overallScore = overview.overallScore;
+  const fixesApplied = Math.max(overview.fixesApplied ?? 0, Object.keys(applied).length);
+  const priorityActions = Array.isArray(overview.priorityActions) && overview.priorityActions.length
+    ? overview.priorityActions
+    : [];
 
   return (
     <div style={{ padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24, maxWidth: 1100, margin: "0 auto" }}>
@@ -454,12 +656,11 @@ function TabOverview({ applied }) {
             Overall Match Score
           </p>
           <h2 style={{ fontFamily: "var(--syne)", fontSize: 28, fontWeight: 800, marginBottom: 6 }}>
-            Strong Candidate —<br />
-            <span style={{ color: "var(--blue-accent)" }}>2 Key Gaps to Close</span>
+            <span style={{ color: "var(--blue-accent)" }}>Gaps to Close</span>
           </h2>
           <p style={{ fontSize: 11, color: "var(--muted2)", lineHeight: 1.7, maxWidth: 480 }}>
-            Your resume aligns well with design systems and research skills. Explicitly adding
-            fintech context and developer-tool experience will push your score to 90+.
+            This first-pass score is generated from your uploaded resume and provided job
+            description. Apply the priority actions to improve fit before exporting.
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 140 }}>
@@ -481,12 +682,10 @@ function TabOverview({ applied }) {
       </div>
 
       {/* Quick stat cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
         {[
-          { n: MATCHED_KEYWORDS.length,                                                                     label: "Keywords Matched",    color: "var(--green)",       icon: "◈" },
-          { n: MISSING_KEYWORDS.length,                                                                     label: "Keywords Missing",    color: "var(--red)",         icon: "◇" },
-          { n: SECTION_ANALYSIS.filter(s => s.status === "improve" || s.status === "missing").length,       label: "Sections to Improve", color: "var(--blue-accent)", icon: "◉" },
-          { n: Object.keys(applied).length,                                                                 label: "Fixes Applied",       color: "var(--blue)",        icon: "✓" },
+          { n: overview.keywordsMatched, label: "Keywords Matched", color: "var(--green)", icon: "◈" },
+          { n: overview.keywordsMissing, label: "Keywords Missing", color: "var(--red)", icon: "◇" },
         ].map(({ n, label, color, icon }) => (
           <div key={label} style={{ background: "var(--card)", border: "1px solid var(--border)", padding: "20px 22px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -504,17 +703,16 @@ function TabOverview({ applied }) {
           ⚡ Priority Actions
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {[
-            { tag: "HIGH",   text: "Add 'fintech' and 'developer-facing' context to your summary and first job bullet.", color: "var(--red)"        },
-            { tag: "HIGH",   text: "Add 4 missing skill keywords: Developer Tools · Fintech · Data-Dense UI · Payment Flows.", color: "var(--red)"  },
-            { tag: "MEDIUM", text: "Reframe Meridian Health experience around complex data interfaces, not just healthcare.", color: "var(--blue-accent)" },
-            { tag: "LOW",    text: "Add one line about cross-functional leadership and stakeholder presentations at Luminary.", color: "var(--muted2)"   },
-          ].map(({ tag, text, color }, i) => (
+          {priorityActions.map(({ priority, text }, i) => {
+            const tag = String(priority || "MEDIUM").toUpperCase();
+            const color = tag === "HIGH" ? "var(--red)" : tag === "LOW" ? "var(--muted2)" : "var(--blue-accent)";
+            return (
             <div key={i} className="action-row">
               <Chip label={tag} color={color} bg={`${color}10`} />
               <p style={{ fontSize: 11, color: "var(--cream)", lineHeight: 1.6, letterSpacing: "0.02em" }}>{text}</p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -522,7 +720,12 @@ function TabOverview({ applied }) {
 }
 
 // ─── Results: Keywords Tab ────────────────────────────────────────────────────
-function TabKeywords() {
+function TabKeywords({ keywordsData }) {
+  if (!keywordsData) return null;
+
+  const matchedKeywords = Array.isArray(keywordsData.matchedKeywords) ? keywordsData.matchedKeywords : [];
+  const missingKeywords = Array.isArray(keywordsData.missingKeywords) ? keywordsData.missingKeywords : [];
+
   return (
     <div style={{ padding: "32px 28px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 1100, margin: "0 auto" }}>
 
@@ -531,16 +734,24 @@ function TabKeywords() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <StatusDot status="good" />
           <p style={{ fontFamily: "var(--syne)", fontWeight: 700, fontSize: 15 }}>Matched Keywords</p>
-          <Chip label={`${MATCHED_KEYWORDS.length} found`} color="var(--green)" bg="var(--green-d)" />
+          <Chip label={`${matchedKeywords.length} found`} color="var(--green)" bg="var(--green-d)" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {MATCHED_KEYWORDS.map(({ word, score }) => (
+          {matchedKeywords.map(({ word }) => (
             <div key={word}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 14px",
+                  background: "var(--card)",
+                  border: "1px solid rgba(34, 201, 122, 0.2)",
+                }}
+              >
+                <span style={{ color: "var(--green)", fontSize: 10 }}>◈</span>
                 <span style={{ fontSize: 11, color: "var(--cream)", letterSpacing: "0.05em" }}>{word}</span>
-                <span style={{ fontSize: 10, color: "var(--green)", fontWeight: 500 }}>{score}%</span>
               </div>
-              <MiniBar value={score} color="var(--green)" />
             </div>
           ))}
         </div>
@@ -551,11 +762,12 @@ function TabKeywords() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
           <StatusDot status="missing" />
           <p style={{ fontFamily: "var(--syne)", fontWeight: 700, fontSize: 15 }}>Missing Keywords</p>
-          <Chip label={`${MISSING_KEYWORDS.length} gaps`} color="var(--red)" bg="var(--red-d)" />
+          <Chip label={`${missingKeywords.length} gaps`} color="var(--red)" bg="var(--red-d)" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {MISSING_KEYWORDS.map(({ word, priority }) => {
-            const c = priority === "high" ? "var(--red)" : priority === "medium" ? "var(--blue-accent)" : "var(--muted2)";
+          {missingKeywords.map(({ word, priority }) => {
+            const level = String(priority || "MEDIUM").toLowerCase();
+            const c = level === "high" ? "var(--red)" : level === "medium" ? "var(--blue-accent)" : "var(--muted2)";
             return (
               <div key={word} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -565,7 +777,7 @@ function TabKeywords() {
                   <span style={{ color: c, fontSize: 10 }}>◇</span>
                   <span style={{ fontSize: 11, color: "var(--cream)" }}>{word}</span>
                 </div>
-                <Chip label={priority.toUpperCase()} color={c} bg={`${c}10`} />
+                <Chip label={level.toUpperCase()} color={c} bg={`${c}10`} />
               </div>
             );
           })}
@@ -573,173 +785,10 @@ function TabKeywords() {
         <div style={{ marginTop: 20, padding: "14px 16px", background: "var(--blue-accent-d)", border: "1px solid var(--blue-accent-m)" }}>
           <p style={{ fontSize: 10, color: "var(--blue-accent)", letterSpacing: "0.15em", marginBottom: 6 }}>💡 Quick Add</p>
           <p style={{ fontSize: 11, color: "var(--cream)", lineHeight: 1.65 }}>
-            Adding these 6 keywords naturally across your resume could raise your match score by{" "}
+            Adding these {missingKeywords.length} keywords naturally across your resume could raise your match score by{" "}
             <strong style={{ color: "var(--blue-accent)" }}>+18 points</strong>.
           </p>
         </div>
-      </div>
-
-      {/* Keyword density cloud */}
-      <div style={{ gridColumn: "span 2", border: "1px solid var(--border)", background: "var(--panel)", padding: 24 }}>
-        <p style={{ fontFamily: "var(--syne)", fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Keyword Density Map</p>
-        <div className="keyword-cloud">
-          {[
-            ...MATCHED_KEYWORDS.map(k => ({ word: k.word, score: k.score, matched: true  })),
-            ...MISSING_KEYWORDS.map(k => ({ word: k.word, score: 0,       matched: false })),
-          ].map(({ word, score, matched }) => (
-            <span
-              key={word}
-              className="keyword-cloud__tag"
-              style={{
-                padding: `${matched ? 8 : 6}px ${matched ? 16 : 12}px`,
-                background: matched ? `rgba(34,201,122,${0.06 + score / 600})` : "var(--red-d)",
-                border: `1px solid ${matched ? "var(--green)40" : "var(--red)30"}`,
-                color:  matched ? "var(--green)" : "var(--red)",
-                fontSize: matched ? Math.max(10, Math.min(14, score / 8)) : 10,
-              }}
-            >
-              {word}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Results: Sections Tab ────────────────────────────────────────────────────
-function TabSections({ applied, applyFix }) {
-  const [activeSection, setActiveSection] = useState(null);
-
-  const statusColor = { good: "var(--green)", improve: "var(--blue-accent)", missing: "var(--red)" };
-  const statusLabel = { good: "Good Match", improve: "Needs Work",           missing: "Gap Detected" };
-
-  return (
-    <div style={{ padding: "32px 28px", display: "flex", gap: 20, maxWidth: 1100, margin: "0 auto" }}>
-
-      {/* Section list */}
-      <div style={{ width: 280, flexShrink: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-        <p style={{ fontSize: 9, letterSpacing: "0.3em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 4 }}>
-          Resume Sections
-        </p>
-        {SECTION_ANALYSIS.map(sec => (
-          <div
-            key={sec.id}
-            className="section-list-item"
-            onClick={() => setActiveSection(activeSection?.id === sec.id ? null : sec)}
-            style={{
-              border: `1px solid ${activeSection?.id === sec.id ? statusColor[sec.status] : "var(--border)"}`,
-              background: activeSection?.id === sec.id ? `${statusColor[sec.status]}0D` : "var(--card)",
-            }}
-          >
-            <StatusDot status={sec.status} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 11, fontWeight: 500, marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {sec.label}
-              </p>
-              <p style={{ fontSize: 9, color: "var(--muted2)", letterSpacing: "0.1em" }}>
-                {statusLabel[sec.status]}
-              </p>
-            </div>
-            {applied[sec.id] && <span style={{ color: "var(--green)", fontSize: 12 }}>✓</span>}
-            <span style={{ fontFamily: "var(--syne)", fontSize: 14, fontWeight: 700, color: statusColor[sec.status], flexShrink: 0 }}>
-              {sec.score}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      {/* Detail panel */}
-      <div style={{ flex: 1 }}>
-        {activeSection ? (
-          <div className="section-detail">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-              <StatusDot status={activeSection.status} />
-              <h3 style={{ fontFamily: "var(--syne)", fontSize: 18, fontWeight: 700 }}>{activeSection.label}</h3>
-              <Chip
-                label={`${activeSection.score}/100`}
-                color={statusColor[activeSection.status]}
-                bg={`${statusColor[activeSection.status]}10`}
-              />
-              {applied[activeSection.id] && <Chip label="Fix Applied" color="var(--green)" bg="var(--green-d)" />}
-            </div>
-
-            <div className="issue-banner">
-              <p style={{ fontSize: 10, color: "var(--red)", letterSpacing: "0.2em", marginBottom: 4 }}>ISSUE DETECTED</p>
-              <p style={{ fontSize: 11, color: "var(--cream)", lineHeight: 1.65 }}>{activeSection.issue}</p>
-            </div>
-
-            {activeSection.original && (
-              <>
-                <div style={{ marginBottom: 16 }}>
-                  <p style={{ fontSize: 9, letterSpacing: "0.25em", textTransform: "uppercase", color: "var(--muted)", marginBottom: 8 }}>
-                    ◈ Current Text
-                  </p>
-                  <div style={{ padding: "14px 16px", background: "var(--card)", border: "1px solid var(--border)", fontSize: 11, lineHeight: 1.75, color: "var(--muted2)" }}>
-                    {activeSection.original}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 20 }}>
-                  <p style={{ fontSize: 9, letterSpacing: "0.25em", textTransform: "uppercase", color: "var(--blue-accent)", marginBottom: 8 }}>
-                    ✦ AI Suggestion
-                  </p>
-                  <div className="suggestion-banner">{activeSection.suggested}</div>
-                </div>
-
-                <button
-                  onClick={() => applyFix(activeSection.id)}
-                  disabled={applied[activeSection.id]}
-                  style={{
-                    background: applied[activeSection.id] ? "var(--green-d)" : "var(--blue-accent)",
-                    border: `1px solid ${applied[activeSection.id] ? "var(--green)" : "var(--blue-accent)"}`,
-                    color: "#fff",
-                    padding: "12px 32px", fontFamily: "var(--syne)", fontSize: 11, fontWeight: 700,
-                    letterSpacing: "0.15em", textTransform: "uppercase",
-                    cursor: applied[activeSection.id] ? "default" : "pointer", transition: "all .25s",
-                  }}
-                >
-                  {applied[activeSection.id] ? "✓ Applied to Resume" : "Apply AI Suggestion"}
-                </button>
-              </>
-            )}
-
-            {activeSection.id === "skills" && (
-              <div>
-                <p style={{ fontSize: 9, letterSpacing: "0.25em", textTransform: "uppercase", color: "var(--blue-accent)", marginBottom: 12 }}>
-                  ✦ Suggested Skills to Add
-                </p>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {["Developer Tools", "Fintech UX", "Data Visualization", "Payment Flow Design"].map(s => (
-                    <div
-                      key={s}
-                      onClick={() => applyFix(s)}
-                      style={{
-                        padding: "8px 16px",
-                        border: applied[s] ? "1px solid var(--green)" : "1px dashed var(--blue-accent)",
-                        background: applied[s] ? "var(--green-d)" : "var(--blue-accent-d)",
-                        color: applied[s] ? "var(--green)" : "var(--blue-accent)",
-                        fontSize: 11, cursor: "pointer", transition: "all .2s", borderRadius: 2,
-                      }}
-                    >
-                      {applied[s] ? `✓ ${s}` : `+ ${s}`}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="empty-state" style={{ height: "100%" }}>
-            <span style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>◈</span>
-            <p style={{ fontFamily: "var(--syne)", fontSize: 16, fontWeight: 600, marginBottom: 8, opacity: 0.5 }}>
-              Select a Section
-            </p>
-            <p style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.7 }}>
-              Click any section on the left<br />to view issues and AI suggestions.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -880,12 +929,12 @@ function TabTailored({ applied, overallScore }) {
 }
 
 // ─── Results Dashboard (shell + tab routing) ──────────────────────────────────
-function ResultsDashboard({ onReset }) {
+function ResultsDashboard({ onReset, analysis, keywordsData }) {
   const [tab,     setTab]     = useState("overview");
   const [applied, setApplied] = useState({});
   const [saved,   setSaved]   = useState(false);
 
-  const overallScore = 74;
+  const overallScore = analysis ? analysis.overallScore : 0;
 
   const applyFix = (id) => setApplied(prev => ({ ...prev, [id]: true }));
 
@@ -897,7 +946,6 @@ function ResultsDashboard({ onReset }) {
   const TABS = [
     ["overview", "Overview"],
     ["keywords", "Keywords"],
-    ["sections", "Sections"],
     ["tailored", "Tailored Resume"],
   ];
 
@@ -933,16 +981,14 @@ function ResultsDashboard({ onReset }) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto" }}>
-        {tab === "overview" && <TabOverview applied={applied} />}
-        {tab === "keywords" && <TabKeywords />}
-        {tab === "sections" && <TabSections applied={applied} applyFix={applyFix} />}
+        {tab === "overview" && <TabOverview applied={applied} analysis={analysis} />}
+        {tab === "keywords" && <TabKeywords keywordsData={keywordsData} />}
         {tab === "tailored" && <TabTailored applied={applied} overallScore={overallScore} />}
       </div>
     </div>
   );
 }
 
-// ─── Top Navigation Bar ───────────────────────────────────────────────────────
 function TopBar({ step }) {
   const steps  = ["resume", "jobdesc", "scanning", "results"];
   const labels = ["Resume", "Job Description", "Analysing",  "Results"];
@@ -995,7 +1041,7 @@ function TopBar({ step }) {
               {i < labels.length - 1 && (
                 <div
                   className="topbar__step-connector"
-                  style={{ background: i < idx ? "rgba(74,158,255,0.6)" : "var(--border)" }}
+                  style={{ background: i < idx ? "rgba(204, 149, 61, 0.6)" : "var(--border)" }}
                 />
               )}
             </div>
@@ -1012,16 +1058,79 @@ function TopBar({ step }) {
 
 export default function Paaila() {
   const [step, setStep] = useState("resume");
+  const [resumeId, setResumeId] = useState("");
+  const [analysis, setAnalysis] = useState(null);
+  const [keywordsData, setKeywordsData] = useState(null);
+
+  const handleResumeReady = (id) => {
+    setResumeId(id || "");
+    setStep("jobdesc");
+  };
+
+  const handleAnalyze = async (jobDescription) => {
+    if (!resumeId) {
+      alert("Please upload/select a resume first.");
+      setStep("resume");
+      return;
+    }
+
+    setStep("scanning");
+    try {
+      const payload = JSON.stringify({
+        resume_id: resumeId,
+        job_description: jobDescription,
+      });
+
+      const headers = {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+      };
+
+      const analysisRes = await fetch(`${API_BASE}/resumeParser/analyze`, {
+        method: "POST",
+        headers,
+        body: payload,
+      });
+
+      if (!analysisRes.ok) {
+        throw new Error("Failed to analyze resume overview");
+      }
+
+      const analysisData = await analysisRes.json();
+
+      if (!analysisData?.analysis) {
+        throw new Error("Analysis payload missing")
+      }
+
+      setAnalysis(analysisData.analysis);
+      setKeywordsData({
+        matchedKeywords: analysisData.analysis.matchedKeywords || [],
+        missingKeywords: analysisData.analysis.missingKeywords || [],
+      });
+      setStep("results");
+    } catch (err) {
+      console.error("Resume analysis failed:", err);
+      alert("Could not run analysis. Please try again.");
+      setStep("jobdesc");
+    }
+  };
+
+  const handleReset = () => {
+    setResumeId("");
+    setAnalysis(null);
+    setKeywordsData(null);
+    setStep("resume");
+  };
 
   return (
     <div className="resume-parser">
       <TopBar step={step} />
       <div className="paaila-bg-grid" />
       <div className="resume-parser__content">
-        {step === "resume"   && <StepResume    onNext={() => setStep("jobdesc")}  />}
-        {step === "jobdesc"  && <StepJobDesc   onNext={() => setStep("scanning")} />}
-        {step === "scanning" && <ScanningOverlay onDone={() => setStep("results")} />}
-        {step === "results"  && <ResultsDashboard onReset={() => setStep("resume")} />}
+        {step === "resume"   && <StepResume onNext={handleResumeReady} />}
+        {step === "jobdesc"  && <StepJobDesc onNext={handleAnalyze} />}
+        {step === "scanning" && <ScanningOverlay />}
+        {step === "results"  && <ResultsDashboard onReset={handleReset} analysis={analysis} keywordsData={keywordsData} />}
       </div>
     </div>
   );

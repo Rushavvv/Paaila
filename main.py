@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
-from models.model import ChatRequest
+from models.model import ChatRequest, ResumeAnalysisRequest
 from models.summary import SummaryRequest
 from models.database import init_db, get_db, SessionLocal
 from models.schemas import RegisterRequest, LoginRequest, AuthResponse, UserResponse
@@ -15,6 +15,8 @@ from pathlib import Path
 from PyPDF2 import PdfReader
 from service.qa_processing import answer_question_ollama
 from service.qa_processing import summarize_pdf_ollama
+from service.qa_processing import analyze_resume_first_pass
+from service.qa_processing import analyze_resume_keywords
 import bcrypt
 from datetime import datetime, timedelta
 import jwt
@@ -24,16 +26,13 @@ from typing import Optional
 import io
 import uuid
 
-
-# Configuration
-JWT_SECRET_KEY = "secret_key"
-JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = 24
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "secret_key")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRATION_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", "20"))
 
 # Initialize database on startup
 init_db()
 
-# Helper functions
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
     salt = bcrypt.gensalt()
@@ -48,7 +47,7 @@ def create_jwt_token(user_id: int, email: str) -> str:
     payload = {
         'user_id': user_id,
         'email': email,
-        'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS)
+        'exp': datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
     }
     return jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
@@ -91,6 +90,30 @@ def get_current_user(
         raise HTTPException(status_code=401, detail="Unauthorized")
     return user
 
+
+def get_current_admin_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    if (current_user.user_type or "normal").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+
+def _active_user_ids_last_30_days(db: Session) -> set[int]:
+    cutoff = datetime.utcnow() - timedelta(days=30)
+    active_ids: set[int] = set()
+
+    for model in (ChatHistory, Document, Resume):
+        rows = (
+            db.query(model.user_id)
+            .filter(model.user_id.isnot(None), model.created_at >= cutoff)
+            .distinct()
+            .all()
+        )
+        active_ids.update(user_id for (user_id,) in rows if user_id is not None)
+
+    return active_ids
+
 app = FastAPI()
 
 app.add_middleware(
@@ -129,22 +152,22 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     user = User(
         name=request.name,
         email=request.email,
-        password_hash=password_hash
+        password_hash=password_hash,
+        user_type="normal"
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     
-    # Generate JWT token
     token = create_jwt_token(user.id, user.email)
-    
-    # Return response
+
     return {
         "token": token,
         "user": {
             "id": user.id,
             "name": user.name,
             "email": user.email,
+            "userType": user.user_type,
             "created_at": user.created_at
         }
     }
@@ -164,6 +187,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             "id": user.id,
             "name": user.name,
             "email": user.email,
+            "userType": user.user_type,
             "created_at": user.created_at
         }
     }
@@ -201,6 +225,46 @@ async def resume_parser(
         "file_path": str(pdf_file_path),
         "text_path": str(text_file_path)
     }
+
+
+@app.post("/resumeParser/analyze")
+async def analyze_resume_parser_first_pass(
+    request: ResumeAnalysisRequest,
+    _: Optional[User] = Depends(get_current_user_optional),
+):
+    try:
+        analysis = analyze_resume_first_pass(request.resume_id, request.job_description)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Resume not found or not processed")
+        return {"analysis": analysis}
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid model JSON response: {str(exc)}")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.post("/resumeParser/keywords")
+async def analyze_resume_parser_keywords(
+    request: ResumeAnalysisRequest,
+    _: Optional[User] = Depends(get_current_user_optional),
+):
+    try:
+        analysis = analyze_resume_first_pass(request.resume_id, request.job_description)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Resume not found or not processed")
+        keywords = {
+            "matchedKeywords": analysis.get("matchedKeywords", []),
+            "missingKeywords": analysis.get("missingKeywords", []),
+        }
+        return {"keywords": keywords}
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid model JSON response: {str(exc)}")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 @app.post("/chat/")
@@ -325,6 +389,36 @@ def list_resumes(
     }
 
 
+@app.delete("/resumes/{resume_id}")
+def delete_resume(
+    resume_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    row = (
+        db.query(Resume)
+        .filter(Resume.user_id == current_user.id, Resume.resume_id == resume_id)
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="Resume not found")
+
+    for candidate in (row.file_path, row.text_path):
+        if not candidate:
+            continue
+        try:
+            path = Path(candidate)
+            if path.exists() and path.is_file():
+                path.unlink()
+        except Exception:
+            # Do not block DB deletion if file cleanup fails.
+            pass
+
+    db.delete(row)
+    db.commit()
+    return {"message": "Resume deleted", "resume_id": resume_id}
+
+
 async def save_pdf_text(file: UploadFile, pdf_file_path: Path, text_file_path: Path):
     """Save uploaded PDF and extracted text to disk."""
     content = await file.read()
@@ -375,4 +469,83 @@ async def summarize(request: SummaryRequest):
     summary = summarize_pdf_ollama(request.document_id)
     print("The summary is:", summary)
     return {"summary": summary}
+
+
+@app.get("/admin/stats")
+def admin_stats(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user)
+):
+    active_user_ids = _active_user_ids_last_30_days(db)
+    return {
+        "totalUsers": db.query(User).count(),
+        "totalResumes": db.query(Resume).count(),
+        "activeUsers": len(active_user_ids),
+    }
+
+
+@app.get("/admin/users")
+def admin_users(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user)
+):
+    active_user_ids = _active_user_ids_last_30_days(db)
+    users = db.query(User).order_by(User.id.asc()).all()
+
+    items = []
+    for user in users:
+        status = "active" if user.id in active_user_ids else "inactive"
+        items.append(
+            {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "status": status,
+                "joined": user.created_at,
+            }
+        )
+
+    return {"users": items}
+
+
+@app.put("/admin/users/{user_id}")
+def update_user(
+    user_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update allowed fields
+    if "name" in data:
+        user.name = data["name"]
+    if "email" in data:
+        user.email = data["email"]
+    
+    db.commit()
+    db.refresh(user)
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "message": "User updated successfully"
+    }
+
+
+@app.delete("/admin/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_admin_user)
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    db.delete(user)
+    db.commit()
+    return {"message": f"User {user.name} deleted successfully"}
 

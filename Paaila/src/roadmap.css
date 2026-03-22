@@ -1,5 +1,5 @@
 /* ─── Google Fonts ─────────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ─── Variables ─────────────────────────────────────────────────────────────── */
 :root {
@@ -9,27 +9,27 @@
   --card-hover:  #1a2030;
   --border:      rgba(255, 255, 255, 0.06);
   --border2:     rgba(255, 255, 255, 0.11);
-  --blue:        #4A9EFF;
-  --blue-d:      rgba(74, 158, 255, 0.12);
-  --blue-m:      rgba(74, 158, 255, 0.22);
-  --blue-glow:   rgba(74, 158, 255, 0.10);
+  --blue:        #22C97A; /* Match green accent */
+  --blue-d:      rgba(34, 201, 122, 0.12);
+  --blue-m:      rgba(34, 201, 122, 0.22);
+  --blue-glow:   rgba(34, 201, 122, 0.10);
   --green:       #22C97A;
   --green-d:     rgba(34, 201, 122, 0.12);
   --cream:       #E8E2D9;
   --muted:       #5C6070;
   --muted2:      #8A8FA0;
-  --syne:        'Syne', sans-serif;
-  --mono:        'IBM Plex Mono', monospace;
+  --syne:        'Sora', sans-serif;
+  --mono:        'Plus Jakarta Sans', sans-serif;
 
   /* node colours */
   --node-bg:         #141820;
-  --node-border:     rgba(74, 158, 255, 0.35);
-  --node-bg-done:    rgba(34, 201, 122, 0.08);
-  --node-border-done:rgba(34, 201, 122, 0.5);
+  --node-border:     rgba(225, 179, 130, 0.35);
+  --node-bg-done:    rgba(225, 179, 130, 0.08);
+  --node-border-done:rgba(225, 179, 130, 0.5);
   --tag-bg:          #0F1117;
   --tag-border:      rgba(255, 255, 255, 0.07);
-  --tag-bg-done:     rgba(34, 201, 122, 0.08);
-  --tag-border-done: rgba(34, 201, 122, 0.4);
+  --tag-bg-done:     rgba(225, 179, 130, 0.08);
+  --tag-border-done: rgba(225, 179, 130, 0.4);
 }
 
 /* ─── Reset ─────────────────────────────────────────────────────────────────── */
@@ -86,8 +86,8 @@ body {
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(74,158,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(74,158,255,0.025) 1px, transparent 1px);
+    linear-gradient(rgba(34,201,122,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,201,122,0.025) 1px, transparent 1px);
   background-size: 48px 48px;
   animation: gridScroll 8s linear infinite;
 }
@@ -123,7 +123,7 @@ body {
   color: var(--cream);
 }
 
-.logo-text .logo-accent { color: var(--blue); }
+.logo-text .logo-accent { color: var(--green); }
 
 .menu-links { display: flex; gap: 4px; align-items: center; }
 
@@ -141,7 +141,7 @@ body {
 }
 
 .menu-link:hover { color: var(--cream); }
-.menu-link.active { color: var(--blue); border-bottom-color: var(--blue); }
+.menu-link.active { color: var(--green); border-bottom-color: var(--green); }
 
 /* ─── Sticky sub-header ──────────────────────────────────────────────────────── */
 .rm-header {
@@ -175,7 +175,7 @@ body {
 }
 
 .rm-back-btn:hover {
-  border-color: var(--blue);
+  border-color: var(--green);
   color: var(--cream);
 }
 
@@ -190,8 +190,8 @@ body {
 .rm-icon-box {
   width: 40px;
   height: 40px;
-  background: var(--blue-d);
-  border: 1px solid rgba(74,158,255,0.25);
+  background: var(--accent-d);
+  border: 1px solid rgba(225,179,130,0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -241,8 +241,8 @@ body {
 
 .rm-progress-bar-fill {
   height: 100%;
-  background: var(--blue);
-  box-shadow: 0 0 10px var(--blue-glow);
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-d);
   transition: width 0.5s cubic-bezier(0.25,0.46,0.45,0.94);
   animation: fillBar 0.8s ease forwards;
 }
@@ -251,7 +251,7 @@ body {
   font-family: var(--syne);
   font-size: 0.875rem;
   font-weight: 800;
-  color: var(--blue);
+  color: var(--accent);
   min-width: 36px;
 }
 
@@ -306,8 +306,8 @@ body {
   height: 100%;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(74,158,255,0.4) 0px,
-    rgba(74,158,255,0.4) 4px,
+    rgba(34,201,122,0.4) 0px,
+    rgba(34,201,122,0.4) 4px,
     transparent 4px,
     transparent 9px
   );
@@ -353,8 +353,8 @@ body {
   position: absolute;
   top: -1px; left: -1px;
   width: 8px; height: 8px;
-  border-top: 2px solid var(--blue);
-  border-left: 2px solid var(--blue);
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
   pointer-events: none;
 }
 
@@ -364,30 +364,30 @@ body {
   position: absolute;
   bottom: -1px; right: -1px;
   width: 8px; height: 8px;
-  border-bottom: 2px solid var(--blue);
-  border-right: 2px solid var(--blue);
+  border-bottom: 2px solid var(--accent);
+  border-right: 2px solid var(--accent);
   pointer-events: none;
 }
 
 .rm-main-node:hover {
   background: var(--card-hover);
-  border-color: var(--blue);
+  border-color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 0 20px var(--blue-glow);
+  box-shadow: 0 0 20px var(--accent-d);
 }
 
 .rm-main-node--done {
-  background: var(--node-bg-done);
-  border-color: var(--node-border-done);
-  color: var(--green);
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-d);
+  color: var(--accent);
 }
 
 .rm-main-node--done::before {
-  border-color: var(--green);
+  border-color: var(--accent);
 }
 
 .rm-main-node--done::after {
-  border-color: var(--green);
+  border-color: var(--accent);
 }
 
 /* ─── Horizontal connector lines ─────────────────────────────────────────────── */
@@ -395,8 +395,8 @@ body {
   height: 1px;
   background: repeating-linear-gradient(
     90deg,
-    rgba(74,158,255,0.45) 0px,
-    rgba(74,158,255,0.45) 5px,
+    rgba(34,201,122,0.45) 0px,
+    rgba(34,201,122,0.45) 5px,
     transparent 5px,
     transparent 10px
   );
@@ -433,7 +433,7 @@ body {
 
 .rm-tag:hover {
   background: var(--card-hover);
-  border-color: rgba(74,158,255,0.3);
+  border-color: rgba(225,179,130,0.3);
   color: var(--cream);
 }
 
@@ -441,12 +441,12 @@ body {
 .rm-tag--done {
   background: var(--tag-bg-done);
   border-color: var(--tag-border-done);
-  color: var(--green);
+  color: var(--accent);
 }
 
 .rm-tag-check {
   font-size: 0.65rem;
-  color: var(--green);
+  color: var(--accent);
   flex-shrink: 0;
 }
 

@@ -23,3 +23,20 @@ A web-based chatbot that allows users to upload PDFs and ask questions about the
 - **Hosting / Local Development:** Runs locally on `http://127.0.0.1:8000/`
 
 ---
+
+## Environment Variables
+
+Set these before running the backend:
+
+- `JWT_SECRET_KEY`: Secret used to sign JWT tokens (required for production).
+- `JWT_ALGORITHM`: JWT signing algorithm (default: `HS256`).
+- `JWT_EXPIRATION_HOURS`: Token expiration in hours (default: `24`).
+
+PowerShell example:
+
+```powershell
+$env:JWT_SECRET_KEY = "replace-with-a-strong-secret"
+$env:JWT_ALGORITHM = "HS256"
+$env:JWT_EXPIRATION_HOURS = "24"
+uvicorn main:app --reload
+```

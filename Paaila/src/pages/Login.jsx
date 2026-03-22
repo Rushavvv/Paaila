@@ -26,7 +26,8 @@ const Login = () => {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('token', data.token);
-        navigate('/home', { replace: true });
+        const userType = (data?.user?.userType || '').toLowerCase();
+        navigate(userType === 'admin' ? '/admin' : '/home', { replace: true });
       } else {
         setError('Invalid email or password');
       }

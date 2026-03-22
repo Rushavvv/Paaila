@@ -10,7 +10,8 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     password_hash = Column(String, nullable=False)
+    user_type = Column("userType", String, nullable=False, server_default="normal")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     def __repr__(self):
-        return f"<User(id={self.id}, name={self.name}, email={self.email})>"
+        return f"<User(id={self.id}, name={self.name}, email={self.email}, user_type={self.user_type})>"

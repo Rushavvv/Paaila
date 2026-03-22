@@ -1,28 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Figtree:wght@300;400;500;600&display=swap');
 
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
 .resume-parser {
-  --bg:              #08090C;
-  --panel:           #0F1117;
-  --card:            #141820;
-  --border:          rgba(255, 255, 255, 0.06);
-  --border2:         rgba(255, 255, 255, 0.10);
-  --blue-accent:     #4A9EFF;
-  --blue-accent-d:   rgba(74, 158, 255, 0.12);
-  --blue-accent-m:   rgba(74, 158, 255, 0.25);
-  --green:           #22C97A;
-  --green-d:         rgba(34, 201, 122, 0.10);
-  --red:             #FF5252;
-  --red-d:           rgba(255, 82, 82, 0.10);
-  --blue:            #4A9EFF;
-  --blue-d:          rgba(74, 158, 255, 0.10);
-  --cream:           #E8E2D9;
-  --muted:           #5C6070;
-  --muted2:          #8A8FA0;
-  --syne:            'Syne', sans-serif;
-  --mono:            'IBM Plex Mono', monospace;
+  /* Surfaces */
+  --bg:              #09090A;
+  --panel:           #111113;
+  --card:            #16161A;
+
+  /* Borders */
+  --border:          rgba(232, 228, 223, 0.07);
+  --border2:         rgba(232, 228, 223, 0.13);
+
+  /* Primary accent — warm peach */
+  --blue-accent:     #C88A72;
+  --blue-accent-d:   rgba(200, 138, 114, 0.10);
+  --blue-accent-m:   rgba(200, 138, 114, 0.22);
+
+  /* Success — sage green */
+  --green:           #8BAF8A;
+  --green-d:         rgba(139, 175, 138, 0.10);
+
+  /* Warning / error — soft terracotta */
+  --red:             #C47878;
+  --red-d:           rgba(196, 120, 120, 0.10);
+
+  /* Secondary accent — lavender */
+  --blue:            #A498C8;
+  --blue-d:          rgba(164, 152, 200, 0.10);
+
+  /* Typography */
+  --cream:           #E8E4DF;
+  --muted:           #4A4852;
+  --muted2:          #6A6672;
+
+  /* Font stacks */
+  --syne:            'EB Garamond', Georgia, serif;
+  --mono:            'Figtree', system-ui, sans-serif;
+
   width: 1527px;
 }
 
+/* ─── Reset ─────────────────────────────────────────────────────────────────── */
 .resume-parser *,
 .resume-parser *::before,
 .resume-parser *::after {
@@ -33,6 +51,7 @@
   background: var(--bg);
   color: var(--cream);
   font-family: var(--mono);
+  font-weight: 300;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -40,35 +59,29 @@
   padding: 0;
 }
 
-.resume-parser ::-webkit-scrollbar {
-  width: 3px;
-  height: 3px;
-}
-.resume-parser ::-webkit-scrollbar-track {
-  background: transparent;
-}
-.resume-parser ::-webkit-scrollbar-thumb {
-  background: #2a2e3a;
-  border-radius: 2px;
-}
+/* ─── Scrollbar ─────────────────────────────────────────────────────────────── */
+.resume-parser ::-webkit-scrollbar        { width: 3px; height: 3px; }
+.resume-parser ::-webkit-scrollbar-track  { background: transparent; }
+.resume-parser ::-webkit-scrollbar-thumb  { background: #2a2720; border-radius: 2px; }
 
 .resume-parser ::selection {
   background: var(--blue-accent-m);
   color: var(--cream);
 }
 
+/* ─── Form elements ──────────────────────────────────────────────────────────── */
 .resume-parser input,
 .resume-parser textarea,
 .resume-parser button {
   font-family: var(--mono);
+  font-weight: 300;
 }
 
-.resume-parser textarea {
-  resize: none;
-}
+.resume-parser textarea { resize: none; }
 
+/* ─── Animations ─────────────────────────────────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
@@ -78,7 +91,7 @@
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateX(-12px); }
+  from { opacity: 0; transform: translateX(-10px); }
   to   { opacity: 1; transform: translateX(0); }
 }
 
@@ -87,18 +100,18 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.35; }
+  0%, 100% { opacity: 0.3; }
   50%       { opacity: 1; }
 }
 
 @keyframes scanDown {
-  from { transform: scaleX(0) translateY(0);   opacity: 1; }
-  60%  { transform: scaleX(1) translateY(0);   opacity: 1; }
+  from { transform: scaleX(0) translateY(0);     opacity: 1; }
+  60%  { transform: scaleX(1) translateY(0);     opacity: 1; }
   to   { transform: scaleX(1) translateY(240px); opacity: 0; }
 }
 
 @keyframes countUp {
-  from { opacity: 0; transform: scale(0.8); }
+  from { opacity: 0; transform: scale(0.85); }
   to   { opacity: 1; transform: scale(1); }
 }
 
@@ -120,17 +133,19 @@
 .resume-parser .fade-in  { animation: fadeIn  0.35s ease forwards; }
 .resume-parser .slide-in { animation: slideIn 0.40s ease forwards; }
 
+/* ─── Background grid — warm, very faint ────────────────────────────────────── */
 .resume-parser .paaila-bg-grid {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(rgba(74, 158, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(74, 158, 255, 0.02) 1px, transparent 1px);
-  background-size: 48px 48px;
+    linear-gradient(rgba(200, 138, 114, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200, 138, 114, 0.015) 1px, transparent 1px);
+  background-size: 56px 56px;
 }
 
+/* ─── Menu bar (outer nav — Paaila) ─────────────────────────────────────────── */
 .resume-parser .menu-bar {
   position: fixed;
   top: 0;
@@ -139,6 +154,7 @@
   z-index: 1000;
 }
 
+/* ─── Content offset ────────────────────────────────────────────────────────── */
 .resume-parser__content {
   position: relative;
   z-index: 1;
@@ -146,13 +162,14 @@
   margin-top: 116px;
 }
 
+/* ─── Top progress bar ──────────────────────────────────────────────────────── */
 .resume-parser .topbar {
   height: 56px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
   display: flex;
   align-items: center;
-  padding: 0 24px;
+  padding: 0 28px;
   flex-shrink: 0;
   position: fixed;
   top: 60px;
@@ -161,25 +178,29 @@
   z-index: 999;
 }
 
+/* Logo — italic serif instead of bold uppercase */
 .resume-parser .topbar__logo {
   font-family: var(--syne);
-  font-weight: 800;
-  font-size: 17px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 400;
+  font-style: italic;
+  font-size: 20px;
+  letter-spacing: 0.01em;
+  text-transform: none;
   color: var(--cream);
   margin-right: 32px;
+  line-height: 1;
 }
 
 .resume-parser .topbar__logo span {
   color: var(--blue-accent);
+  font-style: normal;
 }
 
 .resume-parser .topbar__divider {
   width: 1px;
-  height: 20px;
-  background: var(--border);
-  margin-right: 24px;
+  height: 18px;
+  background: var(--border2);
+  margin-right: 28px;
 }
 
 .resume-parser .topbar__steps {
@@ -189,22 +210,25 @@
 }
 
 .resume-parser .topbar__step-connector {
-  width: 40px;
+  width: 36px;
   height: 1px;
   margin: 0 12px;
-  transition: background 0.3s;
+  transition: background 0.4s;
 }
 
+/* ATS badge */
 .resume-parser .topbar__ats-badge {
-  padding: 6px 16px;
-  border: 1px solid rgba(74, 158, 255, 0.5);
-  background: var(--blue-accent-d);
-  font-size: 10px;
-  color: var(--blue-accent);
-  letter-spacing: 0.15em;
+  padding: 5px 16px;
+  border: 1px solid rgba(139, 175, 138, 0.45);
+  background: rgba(139, 175, 138, 0.08);
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
+  border-radius: 999px;
 }
 
+/* ─── Step pages (upload, jd, scanning) ─────────────────────────────────────── */
 .resume-parser .step-page {
   display: flex;
   flex-direction: column;
@@ -219,17 +243,22 @@
   animation: fadeUp 0.5s ease;
 }
 
+/* Step eyebrow label — peach instead of blue */
 .resume-parser .step-label {
-  font-size: 10px;
-  letter-spacing: 0.35em;
+  font-size: 9px;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
   color: var(--blue-accent);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
+  font-family: var(--mono);
+  font-weight: 400;
 }
 
+/* ─── Cards ─────────────────────────────────────────────────────────────────── */
 .resume-parser .card {
   background: var(--card);
   border: 1px solid var(--border);
+  border-radius: 16px;
 }
 
 .resume-parser .card--blue-active {
@@ -237,22 +266,25 @@
   background: var(--blue-accent-d);
 }
 
+/* ─── Buttons ───────────────────────────────────────────────────────────────── */
 .resume-parser .btn-primary {
   background: var(--blue-accent);
   border: 1px solid var(--blue-accent);
-  color: #fff;
-  padding: 14px 48px;
-  font-family: var(--syne);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  color: #09090A;
+  padding: 13px 44px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.25s;
+  transition: opacity 0.25s;
+  border-radius: 999px;
 }
 
 .resume-parser .btn-primary:hover {
-  background: #74B8FF;
+  opacity: 0.85;
+  background: var(--blue-accent);
 }
 
 .resume-parser .btn-primary:disabled {
@@ -260,47 +292,53 @@
   border-color: var(--border);
   color: var(--muted);
   cursor: not-allowed;
+  opacity: 1;
 }
 
 .resume-parser .btn-ghost {
   background: none;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border2);
   color: var(--muted2);
-  padding: 6px 16px;
+  padding: 7px 18px;
   font-size: 9px;
-  letter-spacing: 0.2em;
+  font-weight: 400;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s;
+  border-radius: 999px;
 }
 
 .resume-parser .btn-ghost:hover {
-  border-color: var(--border2);
+  border-color: var(--blue-accent);
   color: var(--cream);
 }
 
 .resume-parser .btn-export {
   background: var(--blue-accent);
   border: none;
-  color: #fff;
+  color: #09090A;
   padding: 8px 22px;
-  font-family: var(--syne);
+  font-family: var(--mono);
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.15em;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 0.25s;
+  transition: opacity 0.25s;
+  border-radius: 999px;
 }
 
 .resume-parser .btn-export:hover {
-  background: #74B8FF;
+  opacity: 0.85;
 }
 
 .resume-parser .btn-export--saved {
   background: var(--green);
+  color: #09090A;
 }
 
+/* ─── Tab bar ───────────────────────────────────────────────────────────────── */
 .resume-parser .tab-bar {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -316,12 +354,14 @@
   border: none;
   border-bottom: 2px solid transparent;
   font-size: 10px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  font-weight: 400;
   cursor: pointer;
   transition: color 0.2s;
   white-space: nowrap;
   color: var(--muted2);
+  border-radius: 0;
 }
 
 .resume-parser .tab-bar__btn--active {
@@ -329,16 +369,17 @@
   color: var(--blue-accent);
 }
 
+/* ─── Scanning overlay ──────────────────────────────────────────────────────── */
 .resume-parser .scan-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(8, 9, 12, 0.95);
+  background: rgba(9, 9, 10, 0.96);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 500;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(16px);
   margin-top: 116px;
   top: 116px;
 }
@@ -346,20 +387,21 @@
 .resume-parser .scan-overlay__grid {
   position: absolute;
   inset: 0;
-  opacity: 0.04;
+  opacity: 0.03;
   background-image:
     linear-gradient(var(--blue-accent) 1px, transparent 1px),
     linear-gradient(90deg, var(--blue-accent) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-size: 40px 40px;
 }
 
 .resume-parser .scan-box {
-  border: 1px solid var(--blue-accent);
-  padding: 32px 28px 28px;
+  border: 1px solid rgba(200, 138, 114, 0.4);
+  padding: 36px 32px 32px;
   background: var(--panel);
-  margin-bottom: 32px;
+  margin-bottom: 28px;
   position: relative;
   overflow: hidden;
+  border-radius: 20px;
 }
 
 .resume-parser .scan-box__line {
@@ -367,21 +409,22 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 1px;
   background: linear-gradient(90deg, transparent, var(--blue-accent), transparent);
   animation: scanDown 3.2s ease forwards;
   transform-origin: top left;
 }
 
 .resume-parser .scan-box__spinner {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: 2px solid var(--border2);
+  border: 1.5px solid var(--border2);
   border-top-color: var(--blue-accent);
-  animation: spin 0.7s linear infinite;
+  animation: spin 1.4s ease-in-out infinite;
 }
 
+/* ─── Score ring label ──────────────────────────────────────────────────────── */
 .resume-parser .score-ring-label {
   position: absolute;
   inset: 0;
@@ -391,50 +434,58 @@
   justify-content: center;
 }
 
+/* ─── Mini progress bar ─────────────────────────────────────────────────────── */
 .resume-parser .mini-bar {
-  height: 3px;
+  height: 2px;
   background: var(--border);
-  border-radius: 2px;
+  border-radius: 1px;
   overflow: hidden;
   flex: 1;
 }
 
 .resume-parser .mini-bar__fill {
   height: 100%;
-  border-radius: 2px;
-  transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-radius: 1px;
+  transition: width 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* ─── Status dot ────────────────────────────────────────────────────────────── */
 .resume-parser .status-dot {
   display: inline-block;
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
+/* ─── Chip / badge ──────────────────────────────────────────────────────────── */
 .resume-parser .chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 4px 10px;
-  border-radius: 2px;
-  font-size: 10px;
-  letter-spacing: 0.1em;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   flex-shrink: 0;
 }
 
+/* ─── Resume document preview ───────────────────────────────────────────────── */
 .resume-parser .resume-doc {
-  background: #fff;
-  color: #111;
-  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
-  font-family: Georgia, serif;
+  background: #faf8f5;
+  color: #1a1814;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+  font-family: Georgia, 'Times New Roman', serif;
   margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .resume-parser .resume-doc__header {
-  background: #0F1117;
-  color: #E8E2D9;
+  background: #12100D;
+  color: #E8E4DF;
   padding: 32px 40px;
 }
 
@@ -444,85 +495,102 @@
 
 .resume-parser .resume-doc__company {
   font-size: 11px;
-  color: #4A9EFF;
+  color: var(--blue-accent);
   margin-bottom: 6px;
   font-family: var(--mono);
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
+  font-weight: 400;
 }
 
 .resume-parser .resume-doc__bullet-marker {
   position: absolute;
   left: 0;
-  color: #4A9EFF;
+  color: var(--blue-accent);
   font-size: 8px;
   top: 4px;
+  opacity: 0.7;
 }
 
 .resume-parser .resume-doc__skill-tag {
-  padding: 3px 10px;
-  background: #EEF4FF;
-  border: 1px solid rgba(74, 158, 255, 0.18);
+  padding: 3px 12px;
+  background: rgba(200, 138, 114, 0.06);
+  border: 1px solid rgba(200, 138, 114, 0.18);
   font-size: 10px;
-  color: #555;
-  border-radius: 2px;
+  color: #5a4a40;
+  border-radius: 999px;
 }
 
+/* ─── Section list (sections tab) ──────────────────────────────────────────── */
 .resume-parser .section-list-item {
-  padding: 14px 16px;
+  padding: 13px 16px;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   gap: 10px;
+  border-radius: 12px;
 }
 
+.resume-parser .section-list-item:hover {
+  background: rgba(232, 228, 223, 0.04);
+}
+
+/* ─── Section detail panel ──────────────────────────────────────────────────── */
 .resume-parser .section-detail {
   border: 1px solid var(--border);
   background: var(--panel);
   padding: 28px;
   animation: fadeIn 0.25s ease;
+  border-radius: 18px;
 }
 
+/* ─── Issue / suggestion banners ────────────────────────────────────────────── */
 .resume-parser .issue-banner {
-  padding: 12px 16px;
+  padding: 14px 18px;
   background: var(--red-d);
-  border: 1px solid rgba(255, 82, 82, 0.3);
+  border: 1px solid rgba(196, 120, 120, 0.25);
   margin-bottom: 20px;
+  border-radius: 12px;
 }
 
 .resume-parser .suggestion-banner {
-  padding: 14px 16px;
+  padding: 16px 18px;
   background: var(--blue-accent-d);
-  border: 1px solid rgba(74, 158, 255, 0.4);
-  font-size: 11px;
+  border: 1px solid rgba(200, 138, 114, 0.3);
+  font-size: 12px;
   line-height: 1.75;
   color: var(--cream);
+  border-radius: 12px;
 }
 
+/* ─── Keyword cloud ─────────────────────────────────────────────────────────── */
 .resume-parser .keyword-cloud {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .resume-parser .keyword-cloud__tag {
-  border-radius: 2px;
   transition: all 0.2s;
   cursor: default;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  border-radius: 999px;
 }
 
+/* ─── Action row (priority actions) ─────────────────────────────────────────── */
 .resume-parser .action-row {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--card);
   border: 1px solid var(--border);
+  border-radius: 14px;
 }
 
+/* ─── Empty state ───────────────────────────────────────────────────────────── */
 .resume-parser .empty-state {
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--border2);
   background: var(--card);
   padding: 60px;
   display: flex;
@@ -530,4 +598,53 @@
   align-items: center;
   justify-content: center;
   text-align: center;
+  border-radius: 18px;
+}
+
+/* ─── Heading overrides — EB Garamond is a serif at natural weights ─────────── */
+/*     The React code injects fontFamily:"var(--syne)" inline — these rules      */
+/*     refine anything set purely via the CSS class.                              */
+
+/* Step page h2 gets the italic serif treatment */
+.resume-parser .step-page__heading h2 {
+  font-family: var(--syne);
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+/* Tab bar — no border-radius on individual buttons */
+.resume-parser .tab-bar {
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Input / textarea focus glow — warm peach instead of blue */
+.resume-parser input:focus,
+.resume-parser textarea:focus,
+.resume-parser select:focus {
+  outline: none;
+  border-color: rgba(200, 138, 114, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(200, 138, 114, 0.08);
+}
+
+.resume-parser input,
+.resume-parser textarea,
+.resume-parser select {
+  border-radius: 12px;
+}
+
+.resume-parser .section-list-item {
+  border-radius: 12px;
+}
+
+/* ─── Subtle top stripe on scan box ────────────────────────────────────────── */
+.resume-parser .scan-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--sage, #8BAF8A), var(--blue-accent), var(--blue, #A498C8));
+  border-radius: 20px 20px 0 0;
+  opacity: 0.6;
 }
