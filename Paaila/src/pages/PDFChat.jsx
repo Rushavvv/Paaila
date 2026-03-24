@@ -1,16 +1,46 @@
+
 import { useState, useEffect, useRef } from 'react'
 import '../App.css'
 
 function PDFChat() {
   const [sidebarOpen, setSidebarOpen]   = useState(false)
   const [documents, setDocuments]       = useState([])
-  const [selectedDoc, setSelectedDoc]   = useState('')
-  const [summaryText, setSummaryText]   = useState('')
+  const [selectedDoc, setSelectedDoc]   = useState(() => sessionStorage.getItem('pdfchat_selectedDoc') || '')
+  const [summaryText, setSummaryText]   = useState(() => sessionStorage.getItem('pdfchat_summaryText') || '')
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [question, setQuestion]         = useState('')
   const [chatMessages, setChatMessages] = useState([])
   const fileInputRef = useRef(null)
   const chatEndRef   = useRef(null)
+
+  useEffect(() => {
+    function checkToken() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setSelectedDoc('');
+        setSummaryText('');
+        setChatMessages([]);
+        sessionStorage.removeItem('pdfchat_summaryText');
+        sessionStorage.removeItem('pdfchat_selectedDoc');
+      }
+    }
+    checkToken();
+    function onStorage(e) {
+      if (e.key === 'token' && !e.newValue) {
+        setSelectedDoc('');
+        setSummaryText('');
+        setChatMessages([]);
+        sessionStorage.removeItem('pdfchat_summaryText');
+        sessionStorage.removeItem('pdfchat_selectedDoc');
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    const interval = setInterval(checkToken, 60000);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      clearInterval(interval);
+    };
+  }, []);
 
   /* ── Auth ── */
   const getAuthHeaders = () => {
@@ -36,34 +66,61 @@ function PDFChat() {
     }
   }
 
+
   useEffect(() => { loadDocuments() }, [])
+
+  useEffect(() => {
+    sessionStorage.setItem('pdfchat_summaryText', summaryText)
+  }, [summaryText])
 
   /* ── Load chat history when doc changes ── */
   useEffect(() => {
     const loadHistory = async () => {
       if (!selectedDoc) { setChatMessages([]); return }
+      // Show loading state for chat
+      setChatMessages([{ id: 'loading-chat', type: 'bot', text: 'Loading chat history...', isLoading: true }]);
       try {
         const response = await fetch(
           `http://127.0.0.1:8000/chat/history?document_id=${encodeURIComponent(selectedDoc)}`,
           { headers: { ...getAuthHeaders() } }
         )
-        if (!response.ok) return
+        if (!response.ok) {
+          setChatMessages([])
+          return
+        }
         const data = await response.json()
         const historyMessages = (data.history || []).flatMap((row) => ([
           { id: `bot-${row.id}`,  type: 'bot',  text: row.answer   },
           { id: `user-${row.id}`, type: 'user', text: row.question },
         ]))
         setChatMessages(historyMessages)
-      } catch (error) { console.error(error) }
+      } catch (error) {
+        setChatMessages([])
+        console.error(error)
+      }
     }
-    loadHistory()
+    if (selectedDoc) {
+      loadHistory()
+    } else {
+      setChatMessages([])
+    }
   }, [selectedDoc])
 
   /* ── Fetch summary when doc changes ── */
   useEffect(() => {
-    if (!selectedDoc) { setSummaryText(''); return }
+    if (!selectedDoc) { setSummaryText(''); setSummaryLoading(false); return }
+    // Show loading state for summary
+    setSummaryText('');
+    setSummaryLoading(true);
+    // Try to load summary from sessionStorage first
+    const localKey = `pdfchat_summary_${selectedDoc}`
+    const localSummary = sessionStorage.getItem(localKey)
+    if (localSummary) {
+      setSummaryText(localSummary)
+      setSummaryLoading(false)
+      return
+    }
     const fetchSummary = async () => {
-      setSummaryLoading(true)
       try {
         const response = await fetch('http://127.0.0.1:8000/summarize/', {
           method: 'POST',
@@ -72,6 +129,7 @@ function PDFChat() {
         })
         const data = await response.json()
         setSummaryText(data.summary || 'No summary available.')
+        sessionStorage.setItem(localKey, data.summary || 'No summary available.')
       } catch (error) {
         console.error(error)
         setSummaryText('Error generating summary.')
@@ -135,11 +193,16 @@ function PDFChat() {
         return
       }
       const data = await response.json()
-      setChatMessages((prev) =>
-        prev.map((msg) =>
+      setChatMessages((prev) => {
+        const updated = prev.map((msg) =>
           msg.id === loadingId ? { ...msg, text: data.answer, isLoading: false } : msg
         )
-      )
+        // Save chat history for this doc
+        try {
+          localStorage.setItem(`pdfchat_history_${selectedDoc}`, JSON.stringify(updated))
+        } catch {}
+        return updated
+      })
     } catch (error) {
       console.error(error)
       alert('Failed to get answer!')
@@ -147,7 +210,6 @@ function PDFChat() {
     }
   }
 
-  /* ── Enter key to submit ── */
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') askQuestion()
   }
@@ -211,10 +273,9 @@ function PDFChat() {
           <div className="summary-section">
             <p className="section-title">Document Summary</p>
             <div className={`summary-box${summaryLoading ? ' loading' : ''}`}>
-              {summaryLoading}
-              {summaryText || (summaryLoading
+              {summaryLoading
                 ? 'Generating summary...'
-                : 'Select a document to view its summary.')}
+                : summaryText || 'Select a document to view its summary.'}
             </div>
           </div>
 
@@ -228,7 +289,10 @@ function PDFChat() {
                 <select
                   id="document-select"
                   value={selectedDoc}
-                  onChange={(e) => setSelectedDoc(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedDoc(e.target.value);
+                    sessionStorage.setItem('pdfchat_selectedDoc', e.target.value);
+                  }}
                 >
                   <option value="">-- choose a document --</option>
                   {documents.map((doc) => (
@@ -249,7 +313,11 @@ function PDFChat() {
                 />
               </div>
 
-              <button className="ask-button" onClick={askQuestion}>
+              <button
+                className="ask-button"
+                onClick={e => { e.preventDefault(); askQuestion(); }}
+                type="button"
+              >
                 Ask →
               </button>
             </div>
@@ -264,12 +332,12 @@ function PDFChat() {
                     <span className="chat-empty-text">No messages yet</span>
                   </div>
                 ) : (
-                  chatMessages.map((msg) => (
+                  [...chatMessages].reverse().map((msg) => (
                     <div
                       key={msg.id}
                       className={`chat-bubble ${msg.type}${msg.isLoading ? ' loading' : ''}`}
                     >
-                      {msg.isLoading ? null : msg.text}
+                      {msg.isLoading ? (msg.id === 'loading-chat' ? 'Loading chat history...' : '') : msg.text}
                     </div>
                   ))
                 )}

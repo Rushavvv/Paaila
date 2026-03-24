@@ -25,6 +25,62 @@ STOPWORDS = {
 }
 
 
+def improve_resume_json(resume_id: str, job_description: str) -> dict | None:
+    """Return a newly improved resume in JSON format for UI rendering."""
+    resume_text = load_pdf_text(resume_id)
+    if not resume_text:
+        return None
+
+    resume_chunk = resume_text[:6000]
+    jd_chunk = (job_description or "")[:3500]
+
+    prompt = f"""
+        You are a world-class resume writer and career coach.
+        Rewrite the following resume to maximize its match for the provided job description.
+        Output ONLY valid JSON (no markdown, no extra text) with this schema:
+        {{
+            "name": string,
+            "title": string,
+            "summary": string,
+            "sections": [
+                {{
+                    "heading": string,
+                    "items": [string]
+                }}
+            ]
+        }}
+
+        - Use a professional, modern tone.
+        - Emphasize skills, experience, and keywords from the job description.
+        - Keep the structure clear and concise.
+        - Do not invent experience, but rephrase and highlight relevant strengths.
+        - Each section should have a heading (e.g., Experience, Skills, Education) and a list of items (bullet points or short paragraphs).
+        - The summary should be a strong, tailored elevator pitch.
+        - The name and title should be extracted or inferred from the resume text.
+
+        Resume Text:
+        {resume_chunk}
+
+        Job Description:
+        {jd_chunk}
+    """.strip()
+
+    try:
+        ollama = ChatOllama(model="llama3.1:8b", temperature=0.1, base_url="http://localhost:11434")
+        raw = ollama.invoke(prompt)
+        content = raw.content if hasattr(raw, "content") else str(raw)
+        print("[improveResume][model-ollama] Raw response:")
+        print(content)
+        model_payload = _extract_json_object(content)
+        # Basic validation
+        if not model_payload or not isinstance(model_payload, dict):
+            raise ValueError("Model did not return a valid JSON object for improved resume")
+        if not model_payload.get("sections"):
+            raise ValueError("Improved resume JSON missing 'sections'")
+        return model_payload
+    except Exception as ollama_exc:
+        raise RuntimeError(f"Ollama fallback failed for improved resume: {str(ollama_exc)}")
+
 def _extract_json_object(text: str) -> dict | None:
     """Best-effort extraction of the first JSON object from model output."""
     if not text:

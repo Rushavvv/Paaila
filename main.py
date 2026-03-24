@@ -17,6 +17,7 @@ from service.qa_processing import answer_question_ollama
 from service.qa_processing import summarize_pdf_ollama
 from service.qa_processing import analyze_resume_first_pass
 from service.qa_processing import analyze_resume_keywords
+from service.pdf_processing import extract_first_word_from_pdf
 import bcrypt
 from datetime import datetime, timedelta
 import jwt
@@ -266,6 +267,29 @@ async def analyze_resume_parser_keywords(
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
+from service.qa_processing import improve_resume_json
+
+from pydantic import BaseModel
+class ResumeImproveRequest(BaseModel):
+    resume_id: str
+    job_description: str
+
+@app.post("/resumeParser/improve")
+async def improve_resume_parser(
+    request: ResumeImproveRequest,
+    _: Optional[User] = Depends(get_current_user_optional),
+):
+    try:
+        improved = improve_resume_json(request.resume_id, request.job_description)
+        if not improved:
+            raise HTTPException(status_code=404, detail="Resume not found or not processed")
+        return {"improved": improved}
+    except HTTPException:
+        raise
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid model JSON response: {str(exc)}")
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 @app.post("/chat/")
 async def chat_pdf(
@@ -300,13 +324,25 @@ async def upload_pdf(
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported")
 
-    # Generate unique document_id
-    document_id = f"document_{uuid.uuid4().hex[:12]}"
+
+    base_id = Path(file.filename).stem
+    document_id = base_id
+    suffix = 1
+    while db.query(Document).filter_by(document_id=document_id).first() is not None:
+        document_id = f"{base_id}_{suffix}"
+        suffix += 1
+
     pdf_file_path = PDF_UPLOAD_DIR / f"{document_id}.pdf"
     text_file_path = PDF_TEXT_DIR / f"{document_id}.txt"
 
-    # Save PDF file + extracted text
-    text = await save_pdf_text(file, pdf_file_path, text_file_path)
+    # Save PDF file
+    with open(pdf_file_path, "wb") as out_pdf:
+        out_pdf.write(await file.read())
+    file.file.seek(0)
+
+    # Save extracted text
+    from service.pdf_processing import save_pdf_text
+    text = await save_pdf_text(file, document_id)
 
     document_record = Document(
         user_id=current_user.id if current_user else None,

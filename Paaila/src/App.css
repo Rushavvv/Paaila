@@ -681,3 +681,18 @@ input[type="text"]::placeholder { color: var(--muted); }
   .menu-container { padding: 0 16px; }
   .menu-link     { padding: 8px 10px; font-size: 0.5625rem; }
 }
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid var(--muted2);
+  border-top: 4px solid var(--blue-accent, #4A9EFF);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

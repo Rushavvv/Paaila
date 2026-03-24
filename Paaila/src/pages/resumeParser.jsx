@@ -1,4 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { Document, Packer, Paragraph, TextRun } from "docx";
+
+const storage = window.sessionStorage;
+import Spinner from "../components/Spinner";
 import "../resumeParser.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -27,45 +31,6 @@ Requirements:
 • Strong understanding of accessibility (WCAG 2.1)
 • Excellent communication and storytelling skills
 • Experience with fintech or developer tools a strong plus`;
-
-const SECTION_ANALYSIS = [
-  {
-    id: "summary",
-    label: "Summary",
-    score: 62,
-    status: "improve",
-    issue: "Doesn't mention fintech, developer tools, or data-dense UI experience.",
-    original: "Versatile designer with 8+ years crafting intuitive digital experiences at the intersection of user research, visual design, and product strategy. Led redesigns that increased user retention by 42%.",
-    suggested: "Senior UX Designer with 8+ years crafting complex, data-dense digital experiences for technical and developer-facing products. Proven track record in fintech-adjacent environments—led redesigns that increased user retention by 42% and established scalable design systems adopted across 12 products.",
-  },
-  {
-    id: "experience_1",
-    label: "Luminary Labs — Sr. Designer",
-    score: 88,
-    status: "good",
-    issue: "Strong match. Consider adding mention of developer-facing or technical audiences.",
-    original: "Established the company's first design system used across 12 products",
-    suggested: "Established the company's first design system used across 12 products, with documentation and Figma component libraries supporting 8 engineering teams.",
-  },
-  {
-    id: "experience_2",
-    label: "Meridian Health — UX Designer",
-    score: 74,
-    status: "improve",
-    issue: "Healthcare context is fine, but frame it around complex data interfaces.",
-    original: "Designed patient-facing portal serving 2M+ monthly active users",
-    suggested: "Designed complex, data-dense patient portal serving 2M+ MAU — coordinating multi-variable health data into clear, accessible interfaces meeting WCAG 2.1 AA standards.",
-  },
-  {
-    id: "skills",
-    label: "Skills",
-    score: 55,
-    status: "missing",
-    issue: "Missing: Developer Tools, Fintech UX, Payment Flow Design, Data Visualization.",
-    original: null,
-    suggested: null,
-  },
-];
 
 // ─── Utility Helpers ──────────────────────────────────────────────────────────
 
@@ -809,119 +774,46 @@ function TailoredSection({ title, accent, children }) {
   );
 }
 
-function TabTailored({ applied, overallScore }) {
+function TabTailored({ selectedResumeId, jobDescription, improved, loading, error }) {
   const accent = "#4A9EFF";
-
-  const experienceData = [
-    {
-      role: "Senior Product Designer",
-      co: "Luminary Labs",
-      period: "2021 — Present",
-      bullets: applied["experience_1"]
-        ? [
-            "Led end-to-end redesign of core onboarding flow, reducing drop-off by 38%",
-            "Managed a team of 4 designers across web and mobile platforms",
-            "Established company's first design system with Figma component libraries supporting 8 engineering teams",
-          ]
-        : [
-            "Led end-to-end redesign of core onboarding flow, reducing drop-off by 38%",
-            "Managed a team of 4 designers across web and mobile platforms",
-            "Established the company's first design system used across 12 products",
-          ],
-    },
-    {
-      role: "UX Designer",
-      co: "Meridian Health",
-      period: "2018 — 2021",
-      bullets: applied["experience_2"]
-        ? [
-            "Designed complex, data-dense patient portal serving 2M+ MAU, coordinating multi-variable health data into clear, accessible interfaces meeting WCAG 2.1 AA",
-            "Conducted 60+ user interviews and usability testing sessions",
-            "Collaborated with engineering to implement accessible WCAG 2.1 AA standards",
-          ]
-        : [
-            "Designed patient-facing portal serving 2M+ monthly active users",
-            "Conducted 60+ user interviews and usability testing sessions",
-            "Collaborated with engineering to implement accessible WCAG 2.1 AA standards",
-          ],
-    },
-  ];
-
-  const skills = [
-    "Figma", "Prototyping", "Design Systems", "User Research",
-    "Accessibility", "WCAG 2.1", "Motion Design", "HTML/CSS",
-    ...(applied["Developer Tools"]       ? ["Developer Tools"]       : []),
-    ...(applied["Fintech UX"]            ? ["Fintech UX"]            : []),
-    ...(applied["Data Visualization"]    ? ["Data Visualization"]    : []),
-    ...(applied["Payment Flow Design"]   ? ["Payment Flow Design"]   : []),
-  ];
+  if (!selectedResumeId || !jobDescription) return <div style={{padding: 32}}>Waiting for selected resume and job description...</div>;
+  if (loading) return <Spinner label="Generating tailored resume..." />;
+  if (error) return <div style={{padding: 32, color: "var(--red)"}}>{error}</div>;
+  if (!improved) return null;
+  const { _meta, ...improvedData } = improved;
 
   return (
     <div style={{ padding: "32px 28px", maxWidth: 860, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
         <div>
           <p style={{ fontSize: 10, color: "var(--blue-accent)", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: 6 }}>
-            Tailored for: Senior UX Designer — Stripe
+            Tailored Resume Preview
           </p>
-          <h3 style={{ fontFamily: "var(--syne)", fontSize: 22, fontWeight: 800 }}>AI-Tailored Resume Preview</h3>
-        </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Chip
-            label={`Score: ${overallScore + Object.keys(applied).length * 3}/100`}
-            color="var(--blue-accent)"
-            bg="var(--blue-accent-d)"
-          />
-          <Chip label={`${Object.keys(applied).length} fixes applied`} color="var(--green)" bg="var(--green-d)" />
+          <h3 style={{ fontFamily: "var(--syne)", fontSize: 22, fontWeight: 800 }}>AI-Tailored Resume</h3>
         </div>
       </div>
 
-      <div className="resume-doc">
+      <div className="resume-doc" style={{ background: "#fff", color: "#222" }}>
         <div className="resume-doc__header">
-          <h1 style={{ fontFamily: "var(--syne)", fontSize: 30, fontWeight: 800, marginBottom: 4 }}>Rushav Sthapit</h1>
-          <p style={{ fontSize: 14, color: accent, marginBottom: 16, letterSpacing: "0.08em" }}>
-            Senior AI Engineer — Paaila 
-          </p>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", fontSize: 10, color: "#8A8FA0", letterSpacing: "0.05em" }}>
-            {["✉ alex.chen@email.com", "☏ +1 (415) 882-7341", "⌘ San Francisco, CA", "↗ linkedin.com/in/alexchen"].map(i => (
-              <span key={i}>{i}</span>
-            ))}
-          </div>
+          <h1 style={{ fontFamily: "var(--syne)", fontSize: 30, fontWeight: 800, marginBottom: 4 }}>{improvedData.name}</h1>
+          <p style={{ fontSize: 14, color: accent, marginBottom: 16, letterSpacing: "0.08em" }}>{improvedData.title}</p>
         </div>
-
         <div className="resume-doc__body">
-          <TailoredSection title="Summary" accent={accent}>
-            <p style={{ fontSize: 11.5, lineHeight: 1.8, color: "#444" }}>
-              {applied["summary"] ? SECTION_ANALYSIS[0].suggested : SECTION_ANALYSIS[0].original}
-            </p>
+          <TailoredSection title="Introduction" accent={accent}>
+            <p style={{ fontSize: 12, lineHeight: 1.8, color: "#444" }}>{improvedData.summary}</p>
           </TailoredSection>
-
-          <TailoredSection title="Experience" accent={accent}>
-            {experienceData.map(exp => (
-              <div key={exp.co} style={{ marginBottom: 18 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 2 }}>
-                  <strong style={{ fontSize: 13, color: "#111" }}>{exp.role}</strong>
-                  <span style={{ fontSize: 10, color: "#999", fontFamily: "var(--mono)" }}>{exp.period}</span>
-                </div>
-                <p className="resume-doc__company">{exp.co}</p>
-                <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                  {exp.bullets.map((b, i) => (
-                    <li key={i} style={{ fontSize: 11, color: "#555", lineHeight: 1.65, marginBottom: 4, paddingLeft: 14, position: "relative" }}>
-                      <span className="resume-doc__bullet-marker">▸</span>
-                      {b}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </TailoredSection>
-
-          <TailoredSection title="Skills" accent={accent}>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {skills.map(s => (
-                <span key={s} className="resume-doc__skill-tag">{s}</span>
-              ))}
-            </div>
-          </TailoredSection>
+          {Array.isArray(improvedData.sections) && improvedData.sections.map((section, idx) => (
+            <TailoredSection key={idx} title={section.heading} accent={accent}>
+              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                {Array.isArray(section.items) && section.items.map((item, i) => (
+                  <li key={i} style={{ fontSize: 11, color: "#555", lineHeight: 1.65, marginBottom: 4, paddingLeft: 14, position: "relative" }}>
+                    <span className="resume-doc__bullet-marker">▸</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </TailoredSection>
+          ))}
         </div>
       </div>
     </div>
@@ -929,19 +821,114 @@ function TabTailored({ applied, overallScore }) {
 }
 
 // ─── Results Dashboard (shell + tab routing) ──────────────────────────────────
-function ResultsDashboard({ onReset, analysis, keywordsData }) {
+function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, improvedResume, setImprovedResume }) {
+    async function handleExportDocx() {
+      if (!improvedResume) return;
+      const { _meta, name, title, summary, sections } = improvedResume;
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({ text: name || "", bold: true, size: 48 }),
+                ],
+                spacing: { after: 120 },
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: title || "", italics: true, size: 32, color: "888888" }),
+                ],
+                spacing: { after: 200 },
+              }),
+              new Paragraph({
+                text: "Introduction",
+                heading: "Heading2",
+                spacing: { after: 80 },
+              }),
+              new Paragraph({
+                text: summary || "",
+                spacing: { after: 200 },
+              }),
+              ...(Array.isArray(sections)
+                ? sections.flatMap((section) => [
+                    new Paragraph({
+                      text: section.heading,
+                      heading: "Heading2",
+                      spacing: { after: 80 },
+                    }),
+                    ...((Array.isArray(section.items) ? section.items : []).map(
+                      (item) =>
+                        new Paragraph({
+                          text: `• ${item}`,
+                          spacing: { after: 40 },
+                        })
+                    )),
+                  ])
+                : []),
+            ],
+          },
+        ],
+      });
+      const blob = await Packer.toBlob(doc);
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `${name ? name.replace(/\s+/g, "_") : "resume"}_tailored.docx`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+      }, 100);
+    }
   const [tab,     setTab]     = useState("overview");
   const [applied, setApplied] = useState({});
   const [saved,   setSaved]   = useState(false);
+  const [improvedLoading, setImprovedLoading] = useState(false);
+  const [improvedError, setImprovedError] = useState("");
 
   const overallScore = analysis ? analysis.overallScore : 0;
 
   const applyFix = (id) => setApplied(prev => ({ ...prev, [id]: true }));
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
-  };
+
+  useEffect(() => {
+    if (!resumeId || !jobDesc) return;
+    const lastImproved = improvedResume && improvedResume._meta && improvedResume._meta.resumeId === resumeId && improvedResume._meta.jobDesc === jobDesc;
+    if (lastImproved) return;
+    let active = true;
+    setImprovedLoading(true);
+    setImprovedError("");
+    setImprovedResume(null);
+
+    fetch(`${API_BASE}/resumeParser/improve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ resume_id: resumeId, job_description: jobDesc }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.detail || "Failed to generate improved resume");
+        return data;
+      })
+      .then((data) => {
+        if (!active) return;
+        setImprovedResume({ ...(data?.improved || {}), _meta: { resumeId, jobDesc } });
+      })
+      .catch((err) => {
+        if (!active) return;
+        setImprovedError(err?.message || "Failed to generate improved resume.");
+      })
+      .finally(() => {
+        if (!active) return;
+        setImprovedLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [resumeId, jobDesc, improvedResume, setImprovedResume]);
 
   const TABS = [
     ["overview", "Overview"],
@@ -972,10 +959,12 @@ function ResultsDashboard({ onReset, analysis, keywordsData }) {
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button className="btn-ghost" onClick={onReset}>← New Analysis</button>
           <button
-            className={`btn-export${saved ? " btn-export--saved" : ""}`}
-            onClick={handleSave}
+            className={`btn-export`}
+            onClick={handleExportDocx}
+            disabled={!improvedResume}
+            title={!improvedResume ? "No tailored resume to export" : "Export tailored resume as .docx"}
           >
-            {saved ? "✓ Saved!" : "↓ Export Tailored"}
+            ↓ Export Tailored
           </button>
         </div>
       </div>
@@ -983,11 +972,20 @@ function ResultsDashboard({ onReset, analysis, keywordsData }) {
       <div style={{ flex: 1, overflowY: "auto" }}>
         {tab === "overview" && <TabOverview applied={applied} analysis={analysis} />}
         {tab === "keywords" && <TabKeywords keywordsData={keywordsData} />}
-        {tab === "tailored" && <TabTailored applied={applied} overallScore={overallScore} />}
+        {tab === "tailored" && (
+          <TabTailored
+            selectedResumeId={resumeId}
+            jobDescription={jobDesc}
+            improved={improvedResume}
+            loading={improvedLoading}
+            error={improvedError}
+          />
+        )}
       </div>
     </div>
   );
 }
+
 
 function TopBar({ step }) {
   const steps  = ["resume", "jobdesc", "scanning", "results"];
@@ -1011,9 +1009,6 @@ function TopBar({ step }) {
       </nav>
 
       <div className="topbar">
-        <div className="topbar__logo">
-          Paai<span>la</span>
-        </div>
         <div className="topbar__divider" />
 
         <div className="topbar__steps">
@@ -1057,10 +1052,33 @@ function TopBar({ step }) {
 }
 
 export default function Paaila() {
-  const [step, setStep] = useState("resume");
-  const [resumeId, setResumeId] = useState("");
-  const [analysis, setAnalysis] = useState(null);
-  const [keywordsData, setKeywordsData] = useState(null);
+  const [step, setStep] = useState(() => storage.getItem('resume_step') || "resume");
+  const [resumeId, setResumeId] = useState(() => storage.getItem('resume_resumeId') || "");
+  const [analysis, setAnalysis] = useState(() => {
+    try {
+      const saved = storage.getItem('resume_analysis');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [keywordsData, setKeywordsData] = useState(() => {
+    try {
+      const saved = storage.getItem('resume_keywordsData');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [jobDesc, setJobDesc] = useState(() => storage.getItem('resume_jobDesc') || "");
+  const [improvedResume, setImprovedResume] = useState(() => {
+    try {
+      const saved = storage.getItem('resume_improvedResume');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
 
   const handleResumeReady = (id) => {
     setResumeId(id || "");
@@ -1073,35 +1091,30 @@ export default function Paaila() {
       setStep("resume");
       return;
     }
-
+    setJobDesc(jobDescription);
+    storage.setItem('resume_jobDesc', jobDescription);
     setStep("scanning");
     try {
       const payload = JSON.stringify({
         resume_id: resumeId,
         job_description: jobDescription,
       });
-
       const headers = {
         "Content-Type": "application/json",
         ...getAuthHeaders(),
       };
-
       const analysisRes = await fetch(`${API_BASE}/resumeParser/analyze`, {
         method: "POST",
         headers,
         body: payload,
       });
-
       if (!analysisRes.ok) {
         throw new Error("Failed to analyze resume overview");
       }
-
       const analysisData = await analysisRes.json();
-
       if (!analysisData?.analysis) {
         throw new Error("Analysis payload missing")
       }
-
       setAnalysis(analysisData.analysis);
       setKeywordsData({
         matchedKeywords: analysisData.analysis.matchedKeywords || [],
@@ -1119,8 +1132,57 @@ export default function Paaila() {
     setResumeId("");
     setAnalysis(null);
     setKeywordsData(null);
+    setImprovedResume(null);
     setStep("resume");
+    setJobDesc("");
+    storage.removeItem('resume_step');
+    storage.removeItem('resume_resumeId');
+    storage.removeItem('resume_analysis');
+    storage.removeItem('resume_keywordsData');
+    storage.removeItem('resume_jobDesc');
+    storage.removeItem('resume_improvedResume');
   };
+  useEffect(() => {
+    if (step === "scanning") {
+      // Only retry if we have resumeId and jobDesc
+      if (resumeId && jobDesc) {
+        handleAnalyze(jobDesc);
+      } else {
+        // Not enough data, reset to jobdesc step
+        setStep("jobdesc");
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist step, resumeId, analysis, keywordsData
+  useEffect(() => {
+    storage.setItem('resume_step', step)
+  }, [step])
+  useEffect(() => {
+    storage.setItem('resume_resumeId', resumeId)
+  }, [resumeId])
+  useEffect(() => {
+    if (analysis) {
+      storage.setItem('resume_analysis', JSON.stringify(analysis))
+    } else {
+      storage.removeItem('resume_analysis')
+    }
+  }, [analysis])
+  useEffect(() => {
+    if (keywordsData) {
+      storage.setItem('resume_keywordsData', JSON.stringify(keywordsData))
+    } else {
+      storage.removeItem('resume_keywordsData')
+    }
+  }, [keywordsData])
+  useEffect(() => {
+    if (improvedResume) {
+      storage.setItem('resume_improvedResume', JSON.stringify(improvedResume))
+    } else {
+      storage.removeItem('resume_improvedResume')
+    }
+  }, [improvedResume])
 
   return (
     <div className="resume-parser">
@@ -1130,7 +1192,17 @@ export default function Paaila() {
         {step === "resume"   && <StepResume onNext={handleResumeReady} />}
         {step === "jobdesc"  && <StepJobDesc onNext={handleAnalyze} />}
         {step === "scanning" && <ScanningOverlay />}
-        {step === "results"  && <ResultsDashboard onReset={handleReset} analysis={analysis} keywordsData={keywordsData} />}
+        {step === "results"  && (
+          <ResultsDashboard
+            onReset={handleReset}
+            analysis={analysis}
+            keywordsData={keywordsData}
+            resumeId={resumeId}
+            jobDesc={jobDesc}
+            improvedResume={improvedResume}
+            setImprovedResume={setImprovedResume}
+          />
+        )}
       </div>
     </div>
   );

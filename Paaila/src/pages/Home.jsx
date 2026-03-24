@@ -10,15 +10,15 @@ const RoadmapHome = () => {
   const navigate = useNavigate();
 
   const allRoles = [
-    { id: 1, title: 'Data Analyst',        icon: '📊', meta: 'Analytics · SQL · Python'     },
-    { id: 2, title: 'Frontend Developer',  icon: '💻', meta: 'React · CSS · JavaScript'      },
-    { id: 3, title: 'Backend Developer',   icon: '⚙️', meta: 'Node · APIs · Databases'       },
-    { id: 4, title: 'Software Engineer',   icon: '🚀', meta: 'Systems · DSA · Architecture'  },
-    { id: 5,  title: 'DevOps Engineer',             icon: '🔧', meta: 'CI/CD · Docker · Cloud'           },
-    { id: 6,  title: 'Machine Learning Engineer',   icon: '🤖', meta: 'ML · Python · TensorFlow'         },
-    { id: 7,  title: 'UI/UX Designer',              icon: '🎨', meta: 'Figma · Wireframes · Prototyping'  },
-    { id: 8,  title: 'Full Stack Developer',        icon: '🌐', meta: 'React · Node · Databases'          },
-    { id: 9,  title: 'Cybersecurity Analyst',       icon: '🔒', meta: 'Security · Networks · Pentesting'  },
+    { id: 1, title: 'Data Analyst',        slug: 'data-analyst',        icon: '📊', meta: 'Analytics · SQL · Python'     },
+    { id: 2, title: 'Frontend Developer',  slug: 'frontend-developer',  icon: '💻', meta: 'React · CSS · JavaScript'      },
+    { id: 3, title: 'Backend Developer',   slug: 'backend-developer',   icon: '⚙️', meta: 'Node · APIs · Databases'       },
+    { id: 4, title: 'Software Engineer',   slug: 'software-engineer',   icon: '🚀', meta: 'Systems · DSA · Architecture'  },
+    { id: 5, title: 'DevOps Engineer',     slug: 'devops-engineer',     icon: '🔧', meta: 'CI/CD · Docker · Cloud'        },
+    { id: 6, title: 'Machine Learning Engineer', slug: 'machine-learning-engineer', icon: '🤖', meta: 'ML · Python · TensorFlow' },
+    { id: 7, title: 'UI/UX Designer',      slug: 'ui-ux-designer',      icon: '🎨', meta: 'Figma · Wireframes · Prototyping'  },
+    { id: 8, title: 'Full Stack Developer',slug: 'full-stack-developer',icon: '🌐', meta: 'React · Node · Databases'          },
+    { id: 9, title: 'Cybersecurity Analyst',slug: 'cybersecurity-analyst',icon: '🔒', meta: 'Security · Networks · Pentesting'  },
   ];
 
   function shuffle(array) {
@@ -35,8 +35,8 @@ const RoadmapHome = () => {
   const allSearchableRoles = allRoles;
 
   const handleRoleClick = (roleTitle) => {
-    const slug = toSlug(roleTitle);
-    console.log('Navigating to roadmap slug:', slug);
+    const role = allRoles.find(r => r.title === roleTitle);
+    const slug = role ? role.slug : toSlug(roleTitle);
     navigate(`/roadmap/${slug}`);
   };
 
@@ -65,7 +65,9 @@ const RoadmapHome = () => {
 
     if (matchedRoles.length > 0) {
       setSearchMessage('');
-      navigate(`/roadmap/${toSlug(matchedRoles[0].title)}`);
+      const role = allRoles.find(r => r.title === matchedRoles[0].title);
+      const slug = role ? role.slug : toSlug(matchedRoles[0].title);
+      navigate(`/roadmap/${slug}`);
       return;
     }
 
@@ -84,7 +86,7 @@ const RoadmapHome = () => {
         <div className="menu-container">
           <div className="menu-logo">
             <span className="logo-text">
-              Paai<span className="logo-accent">la</span>
+              Paaila
             </span>
           </div>
           <div className="menu-links">
