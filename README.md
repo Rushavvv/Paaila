@@ -19,7 +19,7 @@ A web-based chatbot that allows users to upload PDFs and ask questions about the
 
 - **Frontend:** HTML, CSS, JavaScript  
 - **Backend:** FastAPI  
-- **PDF Processing & Chat:** Python, LangChain, Google Vertex AI Generative API  
+- **PDF Processing & Chat:** Python, LangChain, Ollama
 - **Hosting / Local Development:** Runs locally on `http://127.0.0.1:8000/`
 
 ---

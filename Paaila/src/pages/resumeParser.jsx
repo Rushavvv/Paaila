@@ -3,6 +3,7 @@ import { Document, Packer, Paragraph, TextRun } from "docx";
 
 const storage = window.sessionStorage;
 import Spinner from "../components/Spinner";
+import Footer from "../components/Footer";
 import "../resumeParser.css";
 
 const API_BASE = "http://127.0.0.1:8000";
@@ -937,14 +938,9 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
   ];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 56px)", overflow: "hidden", animation: "fadeIn .4s ease" }}>
-
+    <div className="results-dashboard-shell">
       {/* Sub-tab bar */}
-      <div style={{
-        borderBottom: "1px solid var(--border)", background: "var(--panel)",
-        padding: "0 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexShrink: 0, height: 48,
-      }}>
+      <div className="results-dashboard-tabbar">
         <div className="tab-bar" style={{ border: "none", background: "none" }}>
           {TABS.map(([id, label]) => (
             <button
@@ -968,8 +964,7 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
           </button>
         </div>
       </div>
-
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div className="results-dashboard-content">
         {tab === "overview" && <TabOverview applied={applied} analysis={analysis} />}
         {tab === "keywords" && <TabKeywords keywordsData={keywordsData} />}
         {tab === "tailored" && (
@@ -1204,6 +1199,7 @@ export default function Paaila() {
           />
         )}
       </div>
+      <Footer/>
     </div>
   );
 }

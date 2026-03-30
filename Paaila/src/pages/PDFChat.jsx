@@ -1,19 +1,21 @@
-
 import { useState, useEffect, useRef } from 'react'
+import Footer from '../components/Footer'
 import '../App.css'
 
 function PDFChat() {
   const [sidebarOpen, setSidebarOpen]   = useState(false)
   const [documents, setDocuments]       = useState([])
-  const [selectedDoc, setSelectedDoc]   = useState(() => sessionStorage.getItem('pdfchat_selectedDoc') || '')
+  const [selectedDoc, setSelectedDoc]   = useState('')
   const [summaryText, setSummaryText]   = useState(() => sessionStorage.getItem('pdfchat_summaryText') || '')
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [question, setQuestion]         = useState('')
   const [chatMessages, setChatMessages] = useState([])
+  const [shouldScroll, setShouldScroll] = useState(false)
   const fileInputRef = useRef(null)
   const chatEndRef   = useRef(null)
 
   useEffect(() => {
+    setSelectedDoc('');
     function checkToken() {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -21,7 +23,6 @@ function PDFChat() {
         setSummaryText('');
         setChatMessages([]);
         sessionStorage.removeItem('pdfchat_summaryText');
-        sessionStorage.removeItem('pdfchat_selectedDoc');
       }
     }
     checkToken();
@@ -31,7 +32,6 @@ function PDFChat() {
         setSummaryText('');
         setChatMessages([]);
         sessionStorage.removeItem('pdfchat_summaryText');
-        sessionStorage.removeItem('pdfchat_selectedDoc');
       }
     }
     window.addEventListener('storage', onStorage);
@@ -41,6 +41,14 @@ function PDFChat() {
       clearInterval(interval);
     };
   }, []);
+
+  // Scroll to bottom when chatMessages change
+  useEffect(() => {
+    if (shouldScroll && chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      setShouldScroll(false);
+    }
+  }, [chatMessages, shouldScroll]);
 
   /* ── Auth ── */
   const getAuthHeaders = () => {
@@ -90,8 +98,8 @@ function PDFChat() {
         }
         const data = await response.json()
         const historyMessages = (data.history || []).flatMap((row) => ([
-          { id: `bot-${row.id}`,  type: 'bot',  text: row.answer   },
-          { id: `user-${row.id}`, type: 'user', text: row.question },
+          { id: `bot-${row.id}`,  type: 'bot',  text: row.answer,   date: row.date || row.timestamp || null },
+          { id: `user-${row.id}`, type: 'user', text: row.question, date: row.date || row.timestamp || null },
         ]))
         setChatMessages(historyMessages)
       } catch (error) {
@@ -159,6 +167,7 @@ function PDFChat() {
       alert(`Upload successful! Your Document ID is: ${data.document_id}`)
       fileInput.value = ''
       await loadDocuments()
+      setSelectedDoc(data.document_id)
     } catch (error) {
       console.error(error)
       alert('Failed to upload PDF!')
@@ -171,13 +180,16 @@ function PDFChat() {
       alert('Please select a document and enter a question!')
       return
     }
+    const now = new Date();
+    const dateStr = now.toISOString();
     const userId    = `user-${Date.now()}`
     const loadingId = `loading-${Date.now()}`
     setChatMessages((prev) => [
-      { id: loadingId, type: 'bot',  text: 'Thinking...', isLoading: true },
-      { id: userId,    type: 'user', text: question },
+      { id: loadingId, type: 'bot',  text: 'Thinking...', isLoading: true, date: dateStr },
+      { id: userId,    type: 'user', text: question, date: dateStr },
       ...prev,
     ])
+    setShouldScroll(true);
     const currentQuestion = question
     setQuestion('')
     try {
@@ -195,7 +207,7 @@ function PDFChat() {
       const data = await response.json()
       setChatMessages((prev) => {
         const updated = prev.map((msg) =>
-          msg.id === loadingId ? { ...msg, text: data.answer, isLoading: false } : msg
+          msg.id === loadingId ? { ...msg, text: data.answer, isLoading: false, date: data.created_at || dateStr } : msg
         )
         // Save chat history for this doc
         try {
@@ -214,6 +226,28 @@ function PDFChat() {
     if (e.key === 'Enter') askQuestion()
   }
 
+  // Add clear handler
+  const handleClearAll = async () => {
+    if (!selectedDoc) return;
+    if (!window.confirm('Are you sure you want to clear all chat and summary data for this document?')) return;
+    // Clear chat from backend
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`http://127.0.0.1:8000/chat/delete_history?document_id=${encodeURIComponent(selectedDoc)}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+    } catch (e) {
+      // ignore errors
+    }
+    // Clear UI and storage
+    setChatMessages([]);
+    setSummaryText('');
+    sessionStorage.removeItem('pdfchat_summaryText');
+    sessionStorage.removeItem(`pdfchat_summary_${selectedDoc}`);
+    localStorage.removeItem(`pdfchat_history_${selectedDoc}`);
+  }
+
   return (
     <div className="pdf-page">
 
@@ -221,10 +255,9 @@ function PDFChat() {
       <nav className="menu-bar">
         <div className="menu-container">
           <div className="menu-logo">
-            {/* Upload trigger lives in nav-left */}
-            <button type="button" className="menu-link upload-toggle" onClick={toggleSidebar}>
-              ↑ Upload PDF
-            </button>
+            <span className="logo-text">
+              Paaila
+            </span>
           </div>
           <div className="menu-links">
             <a href="/home"          className="menu-link">Home</a>
@@ -263,7 +296,7 @@ function PDFChat() {
         <div className="header">
           <span className="header-eyebrow">AI-Powered Document Intelligence</span>
           <h1>PDF <span>Chatbot</span></h1>
-          <p>Upload a document, then ask anything about it in plain language.</p>
+          <p>Upload a document, then ask anything about it.</p>
         </div>
 
         {/* Two-column layout */}
@@ -271,11 +304,38 @@ function PDFChat() {
 
           {/* ── Left: Summary ── */}
           <div className="summary-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <button
+                style={{ background: 'var(--blue)', color: '#09090A', border: 'none', borderRadius: 16, padding: '6px 18px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+                onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                title="Upload a PDF document"
+              >
+                ↑ Upload PDF
+              </button>
+              <button
+                style={{ background: 'var(--blue)', color: '#09090A', border: 'none', borderRadius: 16, padding: '6px 18px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+                onClick={handleClearAll}
+                title="Clear all chat and summary data for this document"
+              >
+                Clear All
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".pdf"
+                style={{ display: 'none' }}
+                onChange={async (e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    await uploadPDF();
+                  }
+                }}
+              />
+            </div>
             <p className="section-title">Document Summary</p>
             <div className={`summary-box${summaryLoading ? ' loading' : ''}`}>
               {summaryLoading
                 ? 'Generating summary...'
-                : summaryText || 'Select a document to view its summary.'}
+                : summaryText || 'Summy will be displayed here'}
             </div>
           </div>
 
@@ -284,21 +344,46 @@ function PDFChat() {
 
             {/* Inputs */}
             <div className="input-section">
-              <div className="input-group">
-                <label htmlFor="document-select">Select Document</label>
+              <div className="input-group" style={{ display: 'flex', alignItems: 'center', gap: 8, flexDirection: 'row' }}>
+                <label htmlFor="document-select" style={{ marginBottom: 0, marginRight: 8 }}>Select Document</label>
                 <select
                   id="document-select"
                   value={selectedDoc}
                   onChange={(e) => {
                     setSelectedDoc(e.target.value);
-                    sessionStorage.setItem('pdfchat_selectedDoc', e.target.value);
                   }}
+                  style={{ minWidth: 180 }}
                 >
                   <option value="">-- choose a document --</option>
                   {documents.map((doc) => (
                     <option key={doc} value={doc}>{doc}</option>
                   ))}
                 </select>
+                {selectedDoc && (
+                  <button
+                    style={{ background: 'var(--blue)', color: '#09090A', border: 'none', borderRadius: 12, padding: '4px 12px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', marginLeft: 8 }}
+                    onClick={async () => {
+                      if (!window.confirm('Are you sure you want to delete this document and all its data?')) return;
+                      const token = localStorage.getItem('token');
+                      const res = await fetch(`http://127.0.0.1:8000/documents/${encodeURIComponent(selectedDoc)}`, {
+                        method: 'DELETE',
+                        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        alert('Document deleted.');
+        setSelectedDoc('');
+        await loadDocuments();
+        setChatMessages([]);
+        setSummaryText('');
+      } else {
+        alert('Failed to delete document.');
+      }
+    }}
+    title="Delete this document and all its data"
+  >
+    Delete
+  </button>
+                )}
               </div>
 
               <div className="input-group">
@@ -332,14 +417,31 @@ function PDFChat() {
                     <span className="chat-empty-text">No messages yet</span>
                   </div>
                 ) : (
-                  [...chatMessages].reverse().map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`chat-bubble ${msg.type}${msg.isLoading ? ' loading' : ''}`}
-                    >
-                      {msg.isLoading ? (msg.id === 'loading-chat' ? 'Loading chat history...' : '') : msg.text}
-                    </div>
-                  ))
+                  [...chatMessages].reverse().map((msg, idx, arr) => {
+                    // Show date above the first message, or when date changes
+                    const showDate = idx === 0 || (msg.date && arr[idx - 1]?.date !== msg.date);
+                    // Format ISO date string for display
+                    let displayDate = '';
+                    if (msg.date) {
+                      try {
+                        const d = new Date(msg.date);
+                        displayDate = d.toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: '2-digit' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                      } catch { displayDate = msg.date; }
+                    }
+                    return (
+                      <div key={msg.id} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: msg.type === 'user' ? 'flex-end' : 'flex-start' }}>
+                        {showDate && msg.date && (
+                          <div className="chat-date-label" style={{ textAlign: 'center', color: 'var(--muted2)', fontSize: 11, margin: '10px 0 2px 0', letterSpacing: '0.08em' }}>{displayDate}</div>
+                        )}
+                        <div
+                          className={`chat-bubble ${msg.type}${msg.isLoading ? ' loading' : ''}`}
+                          style={{ textAlign: msg.type === 'user' ? 'right' : 'left' }}
+                        >
+                          {msg.isLoading ? (msg.id === 'loading-chat' ? 'Loading chat history...' : '') : msg.text}
+                        </div>
+                      </div>
+                    )
+                  })
                 )}
                 <div ref={chatEndRef} />
               </div>
@@ -348,6 +450,7 @@ function PDFChat() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   )
 }

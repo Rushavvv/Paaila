@@ -592,19 +592,22 @@ input[type="text"]::placeholder { color: var(--muted); }
    CHAT BUBBLES
    ══════════════════════════════════════════════════════════════════════ */
 .chat-bubble {
-  display: block;
+  display: inline-block;
+  min-width: 48px;
+  max-width: 82%;
   padding: 11px 16px;
   font-size: 0.8125rem;
   line-height: 1.75;
   letter-spacing: 0.01em;
   word-wrap: break-word;
-  max-width: 82%;
   animation: bubbleIn 0.25s ease forwards;
   border: 1px solid transparent;
   position: relative;
+  vertical-align: top;
 }
 
 /* User — warm peach tint, right-aligned */
+
 .chat-bubble.user {
   background: var(--blue-d);
   border-color: rgba(200, 138, 114, 0.2);
@@ -613,6 +616,26 @@ input[type="text"]::placeholder { color: var(--muted); }
   margin-left: auto;
   border-radius: 16px 16px 4px 16px;
   font-weight: 300;
+}
+
+/* Align user messages to the right */
+
+/* Ensure chat-messages is flex column */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+}
+
+/* User messages right, bot messages left */
+.chat-bubble.user,
+.chat-bubble.user.user-message {
+  margin-left: auto;
+  margin-right: 0;
+}
+.chat-bubble.bot,
+.chat-bubble.bot.bot-message {
+  margin-right: auto;
+  margin-left: 0;
 }
 
 /* Bot — soft card, italic garamond feel */

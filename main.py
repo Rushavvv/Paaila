@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, Depends, Header, Query
+from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, Depends, Header, Query, Body
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -115,7 +115,11 @@ def _active_user_ids_last_30_days(db: Session) -> set[int]:
 
     return active_ids
 
-app = FastAPI()
+app = FastAPI(
+    title="Paaila",
+    description="AI powered document assistant and resume parser",
+    version="1.0.0"
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -128,17 +132,17 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static", html = True), name="static")
 
 
-@app.get("/") 
+@app.get("/", include_in_schema=False)
 async def root():
     return FileResponse(Path("static/index.html"))
 
 
-@app.get("/home")
+@app.get("/home", include_in_schema=False)
 async def home():
     return FileResponse(Path("static/index.html"))
 
 
-@app.post("/api/register", response_model=AuthResponse)
+@app.post("/api/register", response_model=AuthResponse, tags=["Authentication"], summary="Register a new user")
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register a new user."""
     if len(request.password) < 8:
@@ -174,7 +178,7 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     }
 
 
-@app.post("/api/login", response_model=AuthResponse)
+@app.post("/api/login", response_model=AuthResponse, tags=["Authentication"], summary="User login and JWT token retrieval")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """Authenticate user and return JWT token."""
     user = db.query(User).filter(User.email == request.email).first()
@@ -194,7 +198,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     }
 
 
-@app.post("/resumeParser/")
+@app.post("/resumeParser/", tags=["Resume Parser"], summary="Upload and process a resume PDF")
 async def resume_parser(
     file: UploadFile,
     db: Session = Depends(get_db),
@@ -228,7 +232,7 @@ async def resume_parser(
     }
 
 
-@app.post("/resumeParser/analyze")
+@app.post("/resumeParser/analyze", tags=["Resume Parser"], summary="Analyze resume for job description match")
 async def analyze_resume_parser_first_pass(
     request: ResumeAnalysisRequest,
     _: Optional[User] = Depends(get_current_user_optional),
@@ -246,7 +250,7 @@ async def analyze_resume_parser_first_pass(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.post("/resumeParser/keywords")
+@app.post("/resumeParser/keywords", tags=["Resume Parser"], summary="Extract resume keywords for job description")
 async def analyze_resume_parser_keywords(
     request: ResumeAnalysisRequest,
     _: Optional[User] = Depends(get_current_user_optional),
@@ -274,7 +278,7 @@ class ResumeImproveRequest(BaseModel):
     resume_id: str
     job_description: str
 
-@app.post("/resumeParser/improve")
+@app.post("/resumeParser/improve", tags=["Resume Parser"], summary="Suggest improvements for resume based on job description")
 async def improve_resume_parser(
     request: ResumeImproveRequest,
     _: Optional[User] = Depends(get_current_user_optional),
@@ -291,7 +295,7 @@ async def improve_resume_parser(
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
-@app.post("/chat/")
+@app.post("/chat/", tags=["PDF Chat"], summary="Ask a question about a PDF document")
 async def chat_pdf(
     request: ChatRequest,
     db: Session = Depends(get_db),
@@ -303,19 +307,22 @@ async def chat_pdf(
     if not answer:
         raise HTTPException(status_code=404, detail="Document not found or not processed")
 
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
     chat_row = ChatHistory(
         user_id=current_user.id if current_user else None,
         document_id=request.document_id,
         question=request.question,
-        answer=answer
+        answer=answer,
+        created_at=now
     )
     db.add(chat_row)
     db.commit()
 
-    return {"answer": answer}
+    return {"answer": answer, "created_at": chat_row.created_at.isoformat()}
 
 
-@app.post("/upload/")
+@app.post("/upload/", tags=["PDF Documents"], summary="Upload a PDF document for processing")
 async def upload_pdf(
     file: UploadFile,
     db: Session = Depends(get_db),
@@ -374,7 +381,7 @@ RESUME_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 pdf_text_store = {}
 
-@app.get("/documents/")
+@app.get("/documents/", tags=["PDF Documents"], summary="List all uploaded PDF documents")
 def list_documents(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
@@ -400,7 +407,7 @@ def list_documents(
     }
 
 
-@app.get("/resumes/")
+@app.get("/resumes/", tags=["Resume Parser"], summary="List all uploaded resumes")
 def list_resumes(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -425,7 +432,7 @@ def list_resumes(
     }
 
 
-@app.delete("/resumes/{resume_id}")
+@app.delete("/resumes/{resume_id}", tags=["Resume Parser"], summary="Delete a resume and its files")
 def delete_resume(
     resume_id: str,
     db: Session = Depends(get_db),
@@ -455,6 +462,30 @@ def delete_resume(
     return {"message": "Resume deleted", "resume_id": resume_id}
 
 
+@app.delete("/documents/{document_id}", tags=["PDF Documents"], summary="Delete a PDF document and its files")
+def delete_document(
+    document_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    row = db.query(Document).filter(Document.user_id == current_user.id, Document.document_id == document_id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Document not found")
+    # Remove files
+    for candidate in (row.file_path, row.text_path):
+        if not candidate:
+            continue
+        try:
+            path = Path(candidate)
+            if path.exists() and path.is_file():
+                path.unlink()
+        except Exception:
+            pass
+    db.delete(row)
+    db.commit()
+    return {"message": "Document deleted", "document_id": document_id}
+
+
 async def save_pdf_text(file: UploadFile, pdf_file_path: Path, text_file_path: Path):
     """Save uploaded PDF and extracted text to disk."""
     content = await file.read()
@@ -475,7 +506,7 @@ async def save_pdf_text(file: UploadFile, pdf_file_path: Path, text_file_path: P
     return text
 
 
-@app.get("/chat/history")
+@app.get("/chat/history", tags=["PDF Chat"], summary="Get chat history for a PDF document")
 def get_chat_history(
     document_id: Optional[str] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
@@ -494,20 +525,33 @@ def get_chat_history(
                 "document_id": row.document_id,
                 "question": row.question,
                 "answer": row.answer,
-                "created_at": row.created_at,
+                "date": row.created_at.isoformat() if row.created_at else None,
             }
             for row in rows
         ]
     }
 
-@app.post("/summarize/")
+@app.delete("/chat/delete_history", tags=["PDF Chat"], summary="Delete chat history for a PDF document")
+def delete_chat_history(
+    document_id: str = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(ChatHistory).filter(ChatHistory.user_id == current_user.id)
+    if document_id:
+        query = query.filter(ChatHistory.document_id == document_id)
+    deleted = query.delete(synchronize_session=False)
+    db.commit()
+    return {"message": f"Deleted {deleted} chat messages for document {document_id}"}
+
+@app.post("/summarize/", tags=["PDF Chat"], summary="Summarize a PDF document")
 async def summarize(request: SummaryRequest):
     summary = summarize_pdf_ollama(request.document_id)
     print("The summary is:", summary)
     return {"summary": summary}
 
 
-@app.get("/admin/stats")
+@app.get("/admin/stats", tags=["Admin"], summary="Get admin statistics")
 def admin_stats(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin_user)
@@ -520,7 +564,7 @@ def admin_stats(
     }
 
 
-@app.get("/admin/users")
+@app.get("/admin/users", tags=["Admin"], summary="List all users (admin only)")
 def admin_users(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_admin_user)
@@ -544,7 +588,7 @@ def admin_users(
     return {"users": items}
 
 
-@app.put("/admin/users/{user_id}")
+@app.put("/admin/users/{user_id}", tags=["Admin"], summary="Update a user (admin only)")
 def update_user(
     user_id: int,
     data: dict,
@@ -571,7 +615,7 @@ def update_user(
     }
 
 
-@app.delete("/admin/users/{user_id}")
+@app.delete("/admin/users/{user_id}", tags=["Admin"], summary="Delete a user (admin only)")
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
