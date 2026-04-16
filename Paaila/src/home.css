@@ -1,52 +1,11 @@
-/* ══════════════════════════════════════════════════════════════════════
-   FOOTER — matches panel, border, accent
-   ══════════════════════════════════════════════════════════════════════ */
-.footer {
-  width: 100%;
-  background: var(--panel);
-  border-top: 3px solid transparent;
-  background-origin: border-box;
-  background-clip: padding-box, border-box;
-  border-bottom: 1px solid var(--border);
-  margin-top: 48px;
-  padding: 32px 0 18px 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.footer-content {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 18px;
-  font-family: var(--mono);
-  color: var(--muted2);
-  font-size: 1rem;
-}
-.footer-logo {
-  font-family: 'EB Garamond', Georgia, serif;
-  font-size: 1.1rem;
-  font-style: italic;
-  color: var(--cream);
-  letter-spacing: 0.01em;
-}
-.footer-divider {
-  width: 1px;
-  height: 22px;
-  background: var(--border2);
-  border-radius: 2px;
-  margin: 0 10px;
-}
-.footer-text {
-  color: var(--muted2);
-  font-size: 0.95rem;
-  font-family: var(--mono);
-}
+
+/* Importing Garamond and Figtree fonts for use throughout the site */
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Figtree:wght@300;400;500;600&display=swap');
 
-/* ══════════════════════════════════════════════════════════════════════
-   SOFT JOURNAL — Roadmap Tokens
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Color tokens and font variables for the roadmap theme
+  These are used for backgrounds, borders, and accents
+*/
 :root {
   --bg:            #09090A;
   --panel:         #111113;
@@ -73,7 +32,9 @@
   --mono:          'Figtree', system-ui, sans-serif;
 }
 
-/* ── Reset ────────────────────────────────────────────────────────────── */
+/*
+  CSS Reset — ensures consistent box sizing and removes default margin/padding
+*/
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -89,7 +50,9 @@ body {
 ::-webkit-scrollbar-thumb { background: #2a2720; border-radius: 2px; }
 ::selection                { background: var(--blue-m); color: var(--cream); }
 
-/* ── Keyframes ────────────────────────────────────────────────────────── */
+/*
+  Keyframes for subtle animations 
+*/
 @keyframes fadeUp    { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
 @keyframes fadeIn    { from{opacity:0;} to{opacity:1;} }
 @keyframes gridScroll{ from{transform:translateY(0);} to{transform:translateY(60px);} }
@@ -107,9 +70,10 @@ body {
   50%      { border-color: rgba(200,138,114,0.4); }
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   MAIN CONTAINER
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Main container for the roadmap home page
+  Sets up background and font for the whole app
+*/
 .roadmap-container {
   min-height: 100vh;
   background: var(--bg);
@@ -118,7 +82,9 @@ body {
   font-family: var(--mono);
 }
 
-/* ── Animated background grid — warm ─────────────────────────────────── */
+/*
+  Animated background grid and glow
+*/
 .bg-grid {
   position: fixed;
   inset: 0;
@@ -144,9 +110,10 @@ body {
   z-index: 0;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   NAVBAR — tri-color stripe
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Navbar styles
+  Handles layout for logo and navigation links
+*/
 .menu-bar {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -205,9 +172,10 @@ body {
 .menu-link:hover  { color: var(--cream); }
 .menu-link.active { color: var(--blue-accent); border-bottom-color: var(--blue-accent); }
 
-/* ══════════════════════════════════════════════════════════════════════
-   PAGE WRAPPER
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Wrapper for the main content area
+  Centers content and sets max width
+*/
 .main-content {
   position: relative;
   z-index: 10;
@@ -219,9 +187,10 @@ body {
   align-items: center;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   HEADER — large italic garamond
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Header section — large italic Garamond for the main title
+  Contains eyebrow, title, and description
+*/
 .header-section {
   text-align: center;
   margin-bottom: 56px;
@@ -260,9 +229,10 @@ body {
   font-weight: 300;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   SEARCH
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Search bar and dropdown suggestions
+  Styles for input, button, and suggestion list
+*/
 .search-container {
   width: 100%;
   max-width: 600px;
@@ -373,9 +343,9 @@ body {
   font-weight: 300;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   SECTION LABEL
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Section label — small uppercase label with divider line
+*/
 .section-label {
   font-size: 0.5625rem;
   letter-spacing: 0.28em;
@@ -396,9 +366,10 @@ body {
   background: var(--border);
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   ROLE CARDS GRID
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  Grid of role cards — shows random career options
+  Each card has hover effects and a colored accent
+*/
 .roles-wrapper {
   width: 100%;
   margin-bottom: 56px;
@@ -517,9 +488,10 @@ body {
   animation: pulse 2.2s ease-in-out infinite;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   HOW IT WORKS SECTION
-   ══════════════════════════════════════════════════════════════════════ */
+/*
+  'How It Works' section — explains the steps to use the app
+  Uses a grid of info cards with step numbers
+*/
 .info-section {
   width: 100%;
   border: 1px solid var(--border);
@@ -617,9 +589,56 @@ body {
   color: #C88A72 !important;
 }
 
-/* ══════════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ══════════════════════════════════════════════════════════════════════ */
+
+/*
+  Footer styles
+*/
+.footer {
+  width: 100%;
+  background: var(--panel);
+  border-top: 3px solid transparent;
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  border-bottom: 1px solid var(--border);
+  margin-top: 48px;
+  padding: 32px 0 18px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.footer-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 18px;
+  font-family: var(--mono);
+  color: var(--muted2);
+  font-size: 1rem;
+}
+.footer-logo {
+  font-family: 'EB Garamond', Georgia, serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--cream);
+  letter-spacing: 0.01em;
+}
+.footer-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--border2);
+  border-radius: 2px;
+  margin: 0 10px;
+}
+.footer-text {
+  color: var(--muted2);
+  font-size: 0.95rem;
+  font-family: var(--mono);
+}
+
+/*
+  Responsive breakpoints for tablets and mobile
+  Adjusts grid columns and padding for smaller screens
+*/
 @media (max-width: 1024px) {
   .roles-grid  { grid-template-columns: repeat(2, 1fr); }
   .info-content { grid-template-columns: 1fr; }

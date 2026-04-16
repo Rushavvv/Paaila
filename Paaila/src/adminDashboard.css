@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=Figtree:wght@300;400;500;600&display=swap');
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -130,6 +131,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* Logout button styles */
+.logout-btn {
+  background: #FFCBA4 ;
+  color: #fff;
+  border: none;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-left: 14px;
+  margin-right: 0;
+  transition: background 0.2s, opacity 0.2s;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+}
+.logout-btn:hover {
+  background: rgb(240, 184, 111);
+  opacity: 0.85;
 }
 
 .menu-logo { display: flex; align-items: center; }
@@ -619,6 +645,32 @@ td.email-cell {
 }
 .status-badge--suspended .status-badge-dot { background: var(--red); }
 
+/* ──── User Type Badge ──── */
+.user-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  font-size: 0.5625rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 999px;
+  font-family: var(--mono);
+}
+
+.user-type-badge--admin {
+  background: var(--blue-d);
+  border-color: rgba(120, 144, 196, 0.28);
+  color: var(--blue);
+}
+
+.user-type-badge--normal {
+  background: rgba(255,255,255,0.03);
+  border-color: var(--border2);
+  color: var(--muted);
+}
+
 /* ══════════════════════════════════════════════════════════════════════
    ACTION BUTTONS
    ══════════════════════════════════════════════════════════════════════ */
@@ -828,6 +880,29 @@ td.email-cell {
   box-shadow: 0 0 0 3px rgba(200, 138, 114, 0.08);
 }
 .form-group input::placeholder { color: var(--muted); }
+
+.form-group select {
+  width: 100%;
+  padding: 11px 16px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  font-weight: 300;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  cursor: pointer;
+}
+.form-group select:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(200, 138, 114, 0.08);
+}
+.form-group select option {
+  background: var(--dark);
+  color: var(--cream);
+}
 
 .modal-body p {
   font-size: 0.875rem;

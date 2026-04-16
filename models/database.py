@@ -28,14 +28,33 @@ def get_db():
         db.close()
 
 def init_db():
-    """Create all database tables and apply lightweight schema updates."""
+    """Create all database tables."""
     Base.metadata.create_all(bind=engine)
 
-    # Backfill for existing deployments that already have a users table.
     with engine.begin() as conn:
         conn.execute(
             text(
                 'ALTER TABLE users ADD COLUMN IF NOT EXISTS "userType" VARCHAR(20) NOT NULL DEFAULT \''
                 'normal\''
+            )
+        )
+        conn.execute(
+            text(
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100) NOT NULL DEFAULT \'''\''
+            )
+        )
+        conn.execute(
+            text(
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100) NOT NULL DEFAULT \'''\''
+            )
+        )
+        conn.execute(
+            text(
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(40) NOT NULL DEFAULT \'''\''
+            )
+        )
+        conn.execute(
+            text(
+                'ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_image_path VARCHAR(255) NULL'
             )
         )

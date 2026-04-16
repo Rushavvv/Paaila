@@ -1,7 +1,20 @@
+
+/*
+  Importing Cormorant Garamond and DM Sans fonts for the roadmap page
+  These fonts are used for headings and body text throughout the roadmap UI
+*/
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
 
-/* ─── TOKENS ─── */
+/*
+  Color tokens, font variables, and base styles for the roadmap theme
+  These set up the background, text, and accent colors for the whole page
+  --bg, --copper, etc. are CSS variables for easy theme management
+*/
 .rp-root {
+  /*
+    Root container for the roadmap page
+    Applies global font, color, and layout settings
+  */
   --bg:            #0b0b0b;
   --bg-card:       #141414;
   --bg-card-hover: #1a1a1a;
@@ -28,7 +41,10 @@
   line-height: 1.6;
 }
 
-/* ─── NAV ─── */
+/*
+  Navigation bar style
+  Sticky top nav for roadmap navigation and branding
+*/
 .rp-nav {
   position: sticky;
   top: 0;
@@ -81,21 +97,30 @@
   border-radius: 20px;
 }
 
-/* ─── GRADIENT LINE ─── */
+/*
+  Decorative gradient line below the navbar for visual separation
+  Adds a subtle color accent under the nav
+*/
 .rp-gradient-line {
   height: 1px;
   background: linear-gradient(90deg, transparent, #5a9e7e, var(--copper), #b87399, transparent);
   opacity: 0.6;
 }
 
-/* ─── WRAPPER ─── */
+/*
+  Main wrapper for roadmap content
+  Sets max width and padding for the main roadmap area
+*/
 .rp-wrapper {
   max-width: 900px;
   margin: 0 auto;
   padding: 56px 40px 0 40px;
 }
 
-/* ─── BREADCRUMB ─── */
+/*
+  Breadcrumb navigation for showing the user's current location
+  Displays the navigation path (Home > Roadmap)
+*/
 .rp-breadcrumb {
   display: flex;
   align-items: center;
@@ -114,7 +139,10 @@
 .rp-bc-sep { color: var(--text-muted); }
 .rp-bc-current { color: var(--copper); }
 
-/* ─── HERO ─── */
+/*
+  Hero section — big title, icon, and tags for the selected roadmap
+  Contains the roadmap title, icon, and summary
+*/
 .rp-hero {
   display: flex;
   align-items: flex-start;
@@ -169,7 +197,10 @@
   color: var(--copper-light);
 }
 
-/* ─── STATS ROW ─── */
+/*
+  Row of stats for the roadmap
+  Shows weeks, phases, and skills count
+*/
 .rp-stats-row {
   display: flex;
   background: var(--bg-card);
@@ -203,7 +234,10 @@
   margin-top: 4px;
 }
 
-/* ─── PROGRESS ─── */
+/*
+  Progress bar and phase indicators for tracking roadmap completion
+  Visualizes user progress through the roadmap
+*/
 .rp-progress-section {
   background: var(--bg-card);
   border: 0.5px solid var(--border);
@@ -270,7 +304,9 @@
 .rp-phase-dot.active .rp-dot { background: var(--copper); }
 .rp-phase-dot.active         { color: var(--copper); }
 
-/* ─── SECTION LABEL ─── */
+/*
+  Section label for roadmap sections
+*/
 .rp-section-label {
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -279,7 +315,10 @@
   margin-bottom: 24px;
 }
 
-/* ─── TIMELINE ─── */
+/*
+  Timeline for the roadmap phases
+  Vertical timeline showing each phase in order
+*/
 .rp-timeline {
   display: flex;
   flex-direction: column;
@@ -296,7 +335,9 @@
   pointer-events: none;
 }
 
-/* ─── PHASE ─── */
+/*
+  Styles for each phase in the roadmap 
+*/
 .phase {
   display: flex;
   gap: 28px;
@@ -358,7 +399,9 @@
   border-color: rgba(74,158,110,0.18);
 }
 
-/* phase header */
+/*
+  Phase header
+*/
 .phase-header {
   padding: 20px 22px 16px;
   display: flex;
@@ -418,7 +461,9 @@
 }
 .phase-chevron.open { transform: rotate(90deg); }
 
-/* phase body content */
+/*
+  Phase body 
+*/
 .phase-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -434,7 +479,9 @@
   margin-bottom: 14px;
 }
 
-/* skill pills */
+/*
+  Skill pills
+*/
 .skills-list {
   display: flex;
   flex-wrap: wrap;
@@ -465,7 +512,9 @@
   color: var(--text-secondary);
 }
 
-/* milestones */
+/*
+  Milestone list 
+*/
 .milestone-list {
   display: flex;
   flex-direction: column;
@@ -494,7 +543,9 @@
 .m-icon.active  { background: var(--copper-dim);     color: var(--copper);     border: 0.5px solid rgba(200,136,90,0.3); }
 .m-icon.pending { background: rgba(255,255,255,0.03); color: var(--text-muted); border: 0.5px solid var(--border); }
 
-/* resources */
+/*
+  Resource chips
+*/
 .resource-row {
   padding: 14px 22px;
   border-top: 0.5px solid var(--border);
@@ -532,7 +583,9 @@
 .rc-project { background: #5ea07e; }
 .rc-course  { background: var(--copper); }
 
-/* ─── FOOTER ─── */
+/*
+  Footer and bottom bar for the roadmap page
+*/
 .rp-bottom-bar {
   margin-top: 80px;
   height: 1px;
@@ -547,7 +600,9 @@
   letter-spacing: 0.06em;
 }
 
-/* ─── NOT FOUND ─── */
+/*
+  Styles for the 'not found' page if a roadmap doesn't exist
+*/
 .rp-not-found { background: var(--bg); min-height: 100vh; }
 .rp-notfound-body {
   display: flex;
@@ -582,7 +637,9 @@
 }
 .rp-back-btn:hover { background: rgba(200,136,90,0.22); }
 
-/* ─── SKILL NOTES SIDEBAR ─── */
+/*
+  Sidebar for skill notes — slides in from the right
+*/
 .rp-skill-sidebar {
   position: fixed;
   top: 0;
@@ -691,7 +748,10 @@
   color: var(--copper);
 }
 
-/* ─── RESPONSIVE ─── */
+/*
+  Responsive breakpoints for tablets and mobile
+  Adjusts layout and sidebar for smaller screens
+*/
 @media (max-width: 1000px) {
   .rp-skill-sidebar {
     width: 360px;

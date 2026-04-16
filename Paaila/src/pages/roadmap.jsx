@@ -1,15 +1,18 @@
+// RoadmapPage.jsx - Main roadmap UI for career tracks
+
 import React, { useState } from 'react';
+// React imports for state and routing
 import { useParams, useNavigate } from 'react-router-dom';
 import '../roadmap.css';
+import UserMenu from '../components/UserMenu';
+// Import roadmap-specific styles
 
-/* ─────────────────────────────────────────────
-   STATIC ROADMAP DATA  (9 roles)
-───────────────────────────────────────────── */
+// Static roadmap data for all supported roles
 const ROADMAPS = {
+    // Each role contains title, icon, duration, and phase breakdown
   'data-analyst': {
     title: 'Data Analyst',
     icon: '📊',
-    meta: 'Analytics · SQL · Python',
     weeks: 20,
     skills: 32,
     progressPct: 0,
@@ -113,7 +116,6 @@ const ROADMAPS = {
   'frontend-developer': {
     title: 'Frontend Developer',
     icon: '💻',
-    meta: 'React · CSS · JavaScript',
     weeks: 22,
     skills: 36,
     progressPct: 0,
@@ -220,7 +222,6 @@ const ROADMAPS = {
   'backend-developer': {
     title: 'Backend Developer',
     icon: '⚙️',
-    meta: 'Node · APIs · Databases',
     weeks: 22,
     skills: 34,
     progressPct: 0,
@@ -326,7 +327,6 @@ const ROADMAPS = {
   'software-engineer': {
     title: 'Software Engineer',
     icon: '🚀',
-    meta: 'Systems · DSA · Architecture',
     weeks: 24,
     skills: 40,
     progressPct: 0,
@@ -432,7 +432,6 @@ const ROADMAPS = {
   'devops-engineer': {
     title: 'DevOps Engineer',
     icon: '🔧',
-    meta: 'CI/CD · Docker · Cloud',
     weeks: 22,
     skills: 35,
     progressPct: 0,
@@ -537,7 +536,6 @@ const ROADMAPS = {
   'machine-learning-engineer': {
     title: 'Machine Learning Engineer',
     icon: '🤖',
-    meta: 'ML · Python · TensorFlow',
     weeks: 26,
     skills: 42,
     progressPct: 0,
@@ -644,7 +642,6 @@ const ROADMAPS = {
   'ui-ux-designer': {
     title: 'UI/UX Designer',
     icon: '🎨',
-    meta: 'Figma · Wireframes · Prototyping',
     weeks: 24,
     skills: 38,
     progressPct: 35,
@@ -756,7 +753,6 @@ const ROADMAPS = {
   'full-stack-developer': {
     title: 'Full Stack Developer',
     icon: '🌐',
-    meta: 'React · Node · Databases',
     weeks: 28,
     skills: 48,
     progressPct: 0,
@@ -863,7 +859,6 @@ const ROADMAPS = {
   'cybersecurity-analyst': {
     title: 'Cybersecurity Analyst',
     icon: '🔒',
-    meta: 'Security · Networks · Pentesting',
     weeks: 24,
     skills: 38,
     progressPct: 0,
@@ -971,9 +966,16 @@ const ROADMAPS = {
 /* ─────────────────────────────────────────────
    HELPERS
 ───────────────────────────────────────────── */
+// Converts a string to a URL-friendly slug (e.g., "Data Science" -> "data-science")
 const toSlug = (text) => text.toLowerCase().trim().replace(/\s+/g, '-');
+// Helper to convert text to a URL-friendly slug
 
+// Maps resource types to CSS class names for coloring resource chips
 const RESOURCE_TYPE_COLOR = {
+  video:   'rc-video',
+  article: 'rc-article',
+  project: 'rc-project',
+  course:  'rc-course',
   video:   'rc-video',
   article: 'rc-article',
   project: 'rc-project',
@@ -981,13 +983,17 @@ const RESOURCE_TYPE_COLOR = {
 };
 
 function PhaseCard({ phase, phaseIndex, onStatusChange, onSkillClick, selectedSkill }) {
+  // Renders a single phase card (collapsible)
   const [open, setOpen] = useState(phase.status === 'active' || phase.status === 'done');
+
+  // Handle phase status changes (done, active, upcoming)
 
   const handlePhaseClick = () => {
     if (phase.status === 'done') {
       onStatusChange(phaseIndex, 'upcoming');
     } else if (phase.status === 'upcoming') {
       onStatusChange(phaseIndex, 'active');
+      setOpen(true);
     } else if (phase.status === 'active') {
       onStatusChange(phaseIndex, 'done');
     }
@@ -1058,12 +1064,19 @@ function PhaseCard({ phase, phaseIndex, onStatusChange, onSkillClick, selectedSk
               <div className="phase-col">
                 <div className="col-label">Skills</div>
                 <div className="skills-list">
+                  {/* Render skill pills for each skill in the phase */}
                   {phase.skills.map((s, i) => (
-                    <span 
-                      key={i} 
-                      className={`skill-pill ${s.status}`}
+                    <span
+                      key={i}
+                      className={`skill-pill ${s.status}${selectedSkill === s.label ? ' skill-pill-selected' : ''}`}
                       onClick={() => onSkillClick(selectedSkill === s.label ? null : s.label)}
-                      style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                      style={{
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        background: selectedSkill === s.label ? '#2d1912' : undefined,
+                        borderColor: selectedSkill === s.label ? '#daa882' : undefined,
+                        color: selectedSkill === s.label ? '#daa882' : undefined,
+                      }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.opacity = '0.8';
                         e.currentTarget.style.transform = 'translateY(-2px)';
@@ -1082,6 +1095,7 @@ function PhaseCard({ phase, phaseIndex, onStatusChange, onSkillClick, selectedSk
               <div className="phase-col">
                 <div className="col-label">Milestones</div>
                 <div className="milestone-list">
+                  {/* Render milestone list for this phase */}
                   {phase.milestones.map((m, i) => {
                     return (
                       <div key={i} className="milestone">
@@ -1107,6 +1121,7 @@ function PhaseCard({ phase, phaseIndex, onStatusChange, onSkillClick, selectedSk
             </div>
 
             <div className="resource-row">
+              {/* Render resource chips for this phase */}
               {phase.resources.map((r, i) => (
                 <a 
                   key={i} 
@@ -1132,6 +1147,7 @@ function PhaseCard({ phase, phaseIndex, onStatusChange, onSkillClick, selectedSk
    MAIN PAGE
 ───────────────────────────────────────────── */
 export default function RoadmapPage() {
+  // Main roadmap page component
   const { role } = useParams();
   const navigate = useNavigate();
   const data = ROADMAPS[role];
@@ -1147,7 +1163,7 @@ export default function RoadmapPage() {
 
   const [selectedSkill, setSelectedSkill] = useState(null);
 
-  // Comprehensive skill notes for all roadmaps
+  // Skill notes for all roadmaps
   const SKILL_NOTES = {
     // Data Analyst
     'Excel / Google Sheets': {
@@ -2567,8 +2583,9 @@ export default function RoadmapPage() {
             </div>
             <div className="menu-links">
               <a href="/home" className="menu-link">Home</a>
-              <a href="http://localhost:5173/chat" className="menu-link">PDF Chatbot</a>
-              <a href="http://localhost:5173/resume-parser" className="menu-link">Resume Parser</a>
+              <a href="/chat" className="menu-link">PDF Chatbot</a>
+              <a href="/resume-parser" className="menu-link">Resume Parser</a>
+              <UserMenu />
             </div>
           </div>
         </nav>
@@ -2596,6 +2613,7 @@ export default function RoadmapPage() {
             <a href="/home" className="menu-link">Home</a>
             <a href="http://localhost:5173/chat" className="menu-link">PDF Chatbot</a>
             <a href="http://localhost:5173/resume-parser" className="menu-link">Resume Parser</a>
+            <UserMenu />
           </div>
         </div>
       </nav>
@@ -2621,11 +2639,6 @@ export default function RoadmapPage() {
               A structured {data.weeks}-week path to becoming a job-ready {data.title}.
               Follow the phases, complete the milestones, and build a standout portfolio.
             </p>
-            <div className="rp-hero-tags">
-              {data.meta.split(' · ').map((t, i) => (
-                <span key={i} className={`rp-tag ${i === 0 ? 'active' : ''}`}>{t}</span>
-              ))}
-            </div>
           </div>
 
           <div className="rp-stats-row">

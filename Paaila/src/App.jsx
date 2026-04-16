@@ -9,11 +9,14 @@ import ResumeParser from './pages/resumeParser';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/adminDashboard';
+import Profile from './pages/profile';
 
 const TOKEN_KEY = 'token'
+const USER_TYPE_KEY = 'userType'
 
 function clearAuth() {
   localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_TYPE_KEY)
 }
 
 function parseJwtPayload(token) {
@@ -46,9 +49,44 @@ function ProtectedRoute({ children }) {
   const location = useLocation()
   const token = localStorage.getItem(TOKEN_KEY)
 
-  if (!isTokenValid(token)) {
+  // Check if token exists and is valid
+  if (!token) {
+    // No token - user needs to authenticate
     clearAuth()
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />
+    return <Navigate to="/login" replace state={{ from: location.pathname, noAuth: true }} />
+  }
+
+  if (!isTokenValid(token)) {
+    // Token exists but is expired
+    clearAuth()
+    return <Navigate to="/login" replace state={{ from: location.pathname, sessionExpired: true }} />
+  }
+
+  return children
+}
+
+function AdminRoute({ children }) {
+  const location = useLocation()
+  const token = localStorage.getItem(TOKEN_KEY)
+  const userType = localStorage.getItem(USER_TYPE_KEY)
+
+  // Check if token exists and is valid
+  if (!token) {
+    // No token - user needs to authenticate
+    clearAuth()
+    return <Navigate to="/login" replace state={{ from: location.pathname, noAuth: true }} />
+  }
+
+  if (!isTokenValid(token)) {
+    // Token exists but is expired
+    clearAuth()
+    return <Navigate to="/login" replace state={{ from: location.pathname, sessionExpired: true }} />
+  }
+
+  // Check if user is admin
+  if ((userType || '').toLowerCase() !== 'admin') {
+    // Not an admin - render children with admin access error
+    return children
   }
 
   return children
@@ -103,7 +141,8 @@ function App() {
         <Route path="/chat" element={<ProtectedRoute><PDFChat /></ProtectedRoute>} />
         <Route path="/roadmap/:role" element={<ProtectedRoute><RoadmapPage /></ProtectedRoute>} />
         <Route path="/resume-parser" element={<ProtectedRoute><ResumeParser /></ProtectedRoute>} />
-        <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,14 +1,24 @@
+
+// Importing React and hooks
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../home.css';
+import UserMenu from '../components/UserMenu';
+import { sanitizeText, validateSearch } from '../utils/validation';
 
+
+// Helper function to convert text to URL-friendly slug
 const toSlug = (text) => text.toLowerCase().trim().replace(/\s+/g, '-');
 
+
+// Main component for the home page
 const RoadmapHome = () => {
+  // State for search input and messages
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMessage, setSearchMessage] = useState('');
   const navigate = useNavigate();
 
+  // List of all available roles 
   const allRoles = [
     { id: 1, title: 'Data Analyst',        slug: 'data-analyst',        icon: '📊', meta: 'Analytics · SQL · Python'     },
     { id: 2, title: 'Frontend Developer',  slug: 'frontend-developer',  icon: '💻', meta: 'React · CSS · JavaScript'      },
@@ -21,6 +31,7 @@ const RoadmapHome = () => {
     { id: 9, title: 'Cybersecurity Analyst',slug: 'cybersecurity-analyst',icon: '🔒', meta: 'Security · Networks · Pentesting'  },
   ];
 
+  // Randomizing roles
   function shuffle(array) {
     const arr = array.slice();
     for (let i = arr.length - 1; i > 0; i--) {
@@ -30,16 +41,20 @@ const RoadmapHome = () => {
     return arr;
   }
 
+  // Pick 4 random roles to display as suggestions
   const [randomRoles] = useState(() => shuffle(allRoles).slice(0, 4));
 
+  // All roles are searchable 
   const allSearchableRoles = allRoles;
 
+  // When a role card or suggestion is clicked, go to its roadmap
   const handleRoleClick = (roleTitle) => {
     const role = allRoles.find(r => r.title === roleTitle);
     const slug = role ? role.slug : toSlug(roleTitle);
     navigate(`/roadmap/${slug}`);
   };
 
+  // Filter roles based on search input
   const trimmedQuery = searchQuery.trim().toLowerCase();
   const matchedRoles = trimmedQuery
     ? allSearchableRoles.filter((role) => {
@@ -48,20 +63,23 @@ const RoadmapHome = () => {
       })
     : [];
 
+  // When a suggestion is clicked, update search and navigate
   const handleSuggestionClick = (roleTitle) => {
     setSearchQuery(roleTitle);
     setSearchMessage('');
     handleRoleClick(roleTitle);
   };
 
+  // Handle the search form submission
   const handleSearch = (e) => {
     e.preventDefault();
-    const query = searchQuery.trim().toLowerCase();
-
-    if (!query) {
-      setSearchMessage('Type a role or skill to search.');
+    const validationError = validateSearch(searchQuery);
+    if (validationError) {
+      setSearchMessage(validationError);
       return;
     }
+
+    const query = sanitizeText(searchQuery).toLowerCase();
 
     if (matchedRoles.length > 0) {
       setSearchMessage('');
@@ -74,14 +92,15 @@ const RoadmapHome = () => {
     setSearchMessage(`No roadmap found for "${searchQuery.trim()}". Try roles like Frontend Developer, DevOps Engineer, or Cybersecurity Analyst.`);
   };
 
+  // Render the home page UI
   return (
     <div className="roadmap-container">
 
-      {/* Ambient background layers */}
+      {/* Background layers */}
       <div className="bg-grid" />
       <div className="bg-glow" />
 
-      {/* ── Navigation ── */}
+      {/* Navigation bar at the top */}
       <nav className="menu-bar">
         <div className="menu-container">
           <div className="menu-logo">
@@ -90,17 +109,18 @@ const RoadmapHome = () => {
             </span>
           </div>
           <div className="menu-links">
-            <a href="/home"                          className="menu-link active">Home</a>
-            <a href="http://localhost:5173/chat"           className="menu-link">PDF Chatbot</a>
-            <a href="http://localhost:5173/resume-parser"  className="menu-link">Resume Parser</a>
+            <a href="/home" className="menu-link active">Home</a>
+            <a href="/chat" className="menu-link">PDF Chatbot</a>
+            <a href="/resume-parser" className="menu-link">Resume Parser</a>
+            <UserMenu />
           </div>
         </div>
       </nav>
 
-      {/* ── Main Content ── */}
+      {/* Main content area */}
       <div className="main-content">
 
-        {/* Header */}
+        {/* Page header and intro */}
         <div className="header-section">
           <span className="header-eyebrow">AI-Powered Career Intelligence</span>
           <h1 className="main-title">
@@ -114,18 +134,20 @@ const RoadmapHome = () => {
           </p>
         </div>
 
-        {/* Search */}
+        {/* Search bar and suggestions */}
         <div className="search-container">
           <form onSubmit={handleSearch} className="search-form">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
+                const nextValue = e.target.value;
+                setSearchQuery(nextValue);
                 if (searchMessage) {
                   setSearchMessage('');
                 }
               }}
+              maxLength={120}
               placeholder="Search for a career path or skill..."
               className="search-input"
               autoComplete="off"
@@ -153,7 +175,7 @@ const RoadmapHome = () => {
           {searchMessage && <p className="search-message">{searchMessage}</p>}
         </div>
 
-        {/* Role Cards */}
+        {/* Cards for random career roles */}
         <div className="roles-wrapper">
           <p className="section-label">Choose a career path</p>
           <div className="roles-grid">
@@ -178,7 +200,7 @@ const RoadmapHome = () => {
           </div>
         </div>
 
-        {/* How It Works */}
+        {/* Section explaining how the app works */}
         <div className="info-section">
           <h2 className="info-title">How It Works</h2>
           <div className="info-content">
@@ -197,6 +219,7 @@ const RoadmapHome = () => {
         </div>
 
       </div>
+      {/* Footer with copyright */}
       <footer className="footer">
         <div className="footer-content">
           <span className="footer-logo">Paaila</span>

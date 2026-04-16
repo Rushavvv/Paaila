@@ -1,17 +1,34 @@
+// PDFChat.jsx — Main component for the PDF Chatbot page
+// Handles document upload, summary, chat, and UI state
 import { useState, useEffect, useRef } from 'react'
 import Footer from '../components/Footer'
+import UserMenu from '../components/UserMenu'
+import { ENDPOINTS, buildBackendUrl } from '../config/api'
+import { sanitizeText, validateAiInput, validatePdfFile } from '../utils/validation'
 import '../App.css'
 
 function PDFChat() {
+  // === State Hooks ===
+  // Sidebar open/close state
   const [sidebarOpen, setSidebarOpen]   = useState(false)
+  // List of available documents (IDs)
   const [documents, setDocuments]       = useState([])
+  // Currently selected document ID
   const [selectedDoc, setSelectedDoc]   = useState('')
+  // Summary text for the selected document
   const [summaryText, setSummaryText]   = useState(() => sessionStorage.getItem('pdfchat_summaryText') || '')
+  // Loading state for summary fetch
   const [summaryLoading, setSummaryLoading] = useState(false)
+  // User's current question input
   const [question, setQuestion]         = useState('')
+  const [inputError, setInputError]     = useState('')
+  // Chat message history (array of {id, type, text, ...})
   const [chatMessages, setChatMessages] = useState([])
+  // Should scroll to bottom after new message
   const [shouldScroll, setShouldScroll] = useState(false)
+  // Ref for file input (PDF upload)
   const fileInputRef = useRef(null)
+  // Ref for scrolling chat to bottom
   const chatEndRef   = useRef(null)
 
   useEffect(() => {
@@ -62,7 +79,7 @@ function PDFChat() {
   /* ── Load documents ── */
   const loadDocuments = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/documents/', {
+      const response = await fetch(buildBackendUrl(ENDPOINTS.DOCUMENTS), {
         headers: { ...getAuthHeaders() },
       })
       if (!response.ok) throw new Error('Failed to fetch documents')
@@ -89,7 +106,7 @@ function PDFChat() {
       setChatMessages([{ id: 'loading-chat', type: 'bot', text: 'Loading chat history...', isLoading: true }]);
       try {
         const response = await fetch(
-          `http://127.0.0.1:8000/chat/history?document_id=${encodeURIComponent(selectedDoc)}`,
+          `${buildBackendUrl(ENDPOINTS.CHAT_HISTORY)}?document_id=${encodeURIComponent(selectedDoc)}`,
           { headers: { ...getAuthHeaders() } }
         )
         if (!response.ok) {
@@ -130,7 +147,7 @@ function PDFChat() {
     }
     const fetchSummary = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/summarize/', {
+        const response = await fetch(buildBackendUrl(ENDPOINTS.SUMMARIZE), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({ document_id: selectedDoc }),
@@ -155,15 +172,26 @@ function PDFChat() {
       alert('Please select a PDF first!')
       return
     }
+    const file = fileInput.files[0]
+    const fileError = validatePdfFile(file)
+    if (fileError) {
+      setInputError(fileError)
+      alert(fileError)
+      return
+    }
     const formData = new FormData()
-    formData.append('file', fileInput.files[0])
+    formData.append('file', file)
     try {
-      const response = await fetch('http://127.0.0.1:8000/upload/', {
+      const response = await fetch(buildBackendUrl(ENDPOINTS.UPLOAD), {
         method: 'POST',
         headers: { ...getAuthHeaders() },
         body: formData,
       })
       const data = await response.json()
+      if (!response.ok) {
+        alert(`Upload failed: ${data.detail || 'Unknown error'}`)
+        return
+      }
       alert(`Upload successful! Your Document ID is: ${data.document_id}`)
       fileInput.value = ''
       await loadDocuments()
@@ -176,10 +204,15 @@ function PDFChat() {
 
   /* ── Ask question ── */
   const askQuestion = async () => {
-    if (!selectedDoc || !question) {
+    const questionError = validateAiInput(question, 'Question')
+    if (!selectedDoc || questionError) {
+      if (questionError) {
+        setInputError(questionError)
+      }
       alert('Please select a document and enter a question!')
       return
     }
+    setInputError('')
     const now = new Date();
     const dateStr = now.toISOString();
     const userId    = `user-${Date.now()}`
@@ -190,10 +223,10 @@ function PDFChat() {
       ...prev,
     ])
     setShouldScroll(true);
-    const currentQuestion = question
+    const currentQuestion = sanitizeText(question)
     setQuestion('')
     try {
-      const response = await fetch('http://127.0.0.1:8000/chat/', {
+      const response = await fetch(buildBackendUrl(ENDPOINTS.CHAT), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ document_id: selectedDoc, question: currentQuestion }),
@@ -233,7 +266,7 @@ function PDFChat() {
     // Clear chat from backend
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://127.0.0.1:8000/chat/delete_history?document_id=${encodeURIComponent(selectedDoc)}`, {
+      await fetch(`${buildBackendUrl(ENDPOINTS.CHAT_DELETE_HISTORY)}?document_id=${encodeURIComponent(selectedDoc)}`, {
         method: 'DELETE',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -260,9 +293,10 @@ function PDFChat() {
             </span>
           </div>
           <div className="menu-links">
-            <a href="/home"          className="menu-link">Home</a>
-            <a href="/chat"          className="menu-link active">PDF Chatbot</a>
+            <a href="/home" className="menu-link">Home</a>
+            <a href="/chat" className="menu-link active">PDF Chatbot</a>
             <a href="/resume-parser" className="menu-link">Resume Parser</a>
+            <UserMenu />
           </div>
         </div>
       </nav>
@@ -365,7 +399,7 @@ function PDFChat() {
                     onClick={async () => {
                       if (!window.confirm('Are you sure you want to delete this document and all its data?')) return;
                       const token = localStorage.getItem('token');
-                      const res = await fetch(`http://127.0.0.1:8000/documents/${encodeURIComponent(selectedDoc)}`, {
+                      const res = await fetch(`${buildBackendUrl(ENDPOINTS.DOCUMENTS_BASE)}/${encodeURIComponent(selectedDoc)}`, {
                         method: 'DELETE',
                         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -392,10 +426,16 @@ function PDFChat() {
                   id="question-input"
                   type="text"
                   value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
+                  maxLength={4000}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    setQuestion(next)
+                    setInputError(validateAiInput(next, 'Question') === 'Question is required' ? '' : validateAiInput(next, 'Question'))
+                  }}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask anything about this document..."
                 />
+                {inputError && <p style={{ marginTop: 6, color: 'var(--red)', fontSize: 12 }}>{inputError}</p>}
               </div>
 
               <button

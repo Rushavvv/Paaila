@@ -1,12 +1,17 @@
-import { useState, useEffect, useRef } from "react";
-import { Document, Packer, Paragraph, TextRun } from "docx";
+import { useState, useEffect, useRef, Component } from "react";
+import ReactQuill from "react-quill-new";
+import DOMPurify from "dompurify";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+import "react-quill-new/dist/quill.snow.css";
 
 const storage = window.sessionStorage;
 import Spinner from "../components/Spinner";
 import Footer from "../components/Footer";
+import UserMenu from "../components/UserMenu";
+import { ENDPOINTS, buildBackendUrl } from "../config/api";
+import { sanitizeText, validateAiInput, validatePdfFile } from "../utils/validation";
 import "../resumeParser.css";
-
-const API_BASE = "http://127.0.0.1:8000";
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -223,6 +228,7 @@ function StepResume({ onNext }) {
   const [selectedResumeId, setSelectedResumeId] = useState("");
   const [pendingResume, setPendingResume] = useState(null);
   const fileInputRef = useRef(null);
+  const [uploadMessage, setUploadMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     let active = true;
@@ -230,7 +236,7 @@ function StepResume({ onNext }) {
     const loadResumes = async () => {
       setLoadingResumes(true);
       try {
-        const res = await fetch(`${API_BASE}/resumes/`, {
+        const res = await fetch(buildBackendUrl(ENDPOINTS.RESUME_LIST), {
           headers: { ...getAuthHeaders() },
         });
 
@@ -262,8 +268,34 @@ function StepResume({ onNext }) {
 
   const handleUpload = async (file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      alert("Please upload a PDF file.");
+
+    // Enhanced validation for all test cases
+    const fileError = validatePdfFile(file);
+    if (fileError) {
+      setUploadMessage({ type: 'error', text: fileError });
+      return;
+    }
+
+    // TC-050: Case-sensitive extension check (lowercase only)
+    const fileName = String(file.name || '').toLowerCase();
+    if (!fileName.endsWith('.pdf')) {
+      setUploadMessage({
+        type: 'error',
+        text: 'File extension must be lowercase .pdf (e.g., resume.pdf, not RESUME.PDF).',
+      });
+      return;
+    }
+
+    // Reset messages before upload
+    setUploadMessage({ type: '', text: '' });
+
+    // TC-049: Additional check for non-PDF files
+    const allowedMimes = ['application/pdf', 'application/x-pdf', 'application/octet-stream'];
+    if (file.type && !allowedMimes.includes(file.type.toLowerCase())) {
+      setUploadMessage({
+        type: 'error',
+        text: 'Only PDF files are supported. Please upload a .pdf file, not .docx, .txt, or other formats.',
+      });
       return;
     }
 
@@ -272,17 +304,32 @@ function StepResume({ onNext }) {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(`${API_BASE}/resumeParser/`, {
+      const res = await fetch(buildBackendUrl(ENDPOINTS.RESUME_UPLOAD), {
         method: "POST",
         headers: { ...getAuthHeaders() },
         body: formData,
       });
 
       if (!res.ok) {
-        throw new Error("Resume upload failed");
+        const errorText = await res.text().catch(() => '');
+        // TC-051 & TC-052: Handle corrupted or oversized PDFs with descriptive errors
+        if (res.status === 400) {
+          if (errorText.includes('corrupted') || errorText.includes('invalid')) {
+            throw new Error('The PDF file appears to be corrupted or invalid. Please try another file.');
+          }
+          if (errorText.includes('size') || errorText.includes('too large')) {
+            throw new Error('The PDF file is too large. Maximum file size is 10 MB.');
+          }
+          throw new Error('Invalid PDF file. Please ensure the file is a valid PDF.');
+        }
+        if (res.status === 413) {
+          throw new Error('The PDF file is too large. Maximum file size is 10 MB.');
+        }
+        throw new Error("Resume upload failed. Please try again.");
       }
 
       const data = await res.json();
+      // TC-048: Success case with resume_id
       const newResume = {
         resume_id: data.resume_id,
         original_filename: file.name,
@@ -293,10 +340,17 @@ function StepResume({ onNext }) {
       setResumes((prev) => [newResume, ...prev]);
       setLoaded(true);
       setSelectedResumeId(data.resume_id);
+      setUploadMessage({
+        type: 'success',
+        text: `Resume uploaded successfully! (ID: ${data.resume_id}). Processing...`,
+      });
       setTimeout(() => onNext(data.resume_id), 500);
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Failed to upload/process resume. Please try again.");
+      setUploadMessage({
+        type: 'error',
+        text: err.message || 'Failed to upload/process resume. Please try again.',
+      });
     } finally {
       setUploading(false);
     }
@@ -322,7 +376,7 @@ function StepResume({ onNext }) {
     const targetId = pendingResume.resume_id;
     setDeletingResumeId(targetId);
     try {
-      const res = await fetch(`${API_BASE}/resumes/${targetId}`, {
+      const res = await fetch(`${buildBackendUrl(ENDPOINTS.RESUME_LIST)}${targetId}`, {
         method: "DELETE",
         headers: { ...getAuthHeaders() },
       });
@@ -360,6 +414,9 @@ function StepResume({ onNext }) {
         <div style={{ border: "1px solid var(--border)", background: "var(--panel)", padding: 16 }}>
           <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 12 }}>
             Previously Uploaded Resumes
+          </p>
+          <p style={{ fontSize: 10, color: "var(--muted2)", marginBottom: 12 }}>
+            Make sure to include "Professional Summary" in your resume for best results
           </p>
 
           {loadingResumes ? (
@@ -489,6 +546,23 @@ function StepResume({ onNext }) {
           <p style={{ fontSize: 10, color: "var(--muted2)", letterSpacing: "0.05em" }}>
             {uploading ? "Uploading..." : "PDF Only"}
           </p>
+          {uploadMessage.text && (
+            <p
+              style={{
+                fontSize: 10,
+                marginTop: 12,
+                padding: '8px 10px',
+                borderRadius: '4px',
+                background: uploadMessage.type === 'error' ? 'var(--red-d)' : 'var(--green-d)',
+                color: uploadMessage.type === 'error' ? 'var(--red)' : 'var(--green)',
+                wordBreak: 'break-word',
+                letterSpacing: '0.02em',
+              }}
+            >
+              {uploadMessage.type === 'error' ? '✗ ' : '✓ '}
+              {uploadMessage.text}
+            </p>
+          )}
         </div>
 
         <input
@@ -508,9 +582,12 @@ function StepJobDesc({ onNext }) {
   const [jd,  setJd]  = useState("");
   const [url, setUrl] = useState("");
   const [tab, setTab] = useState("paste");
+  const [inputError, setInputError] = useState("");
 
-  const canNext = jd.trim().length > 40 || url.trim().length > 5;
-  const payload = tab === "paste" ? jd.trim() : url.trim();
+  const payload = tab === "paste" ? sanitizeText(jd) : sanitizeText(url);
+  const minLengthValid = tab === "paste" ? payload.length > 40 : payload.length > 5;
+  const validationError = validateAiInput(payload, tab === "paste" ? "Job description" : "Job description URL");
+  const canNext = minLengthValid && !validationError;
 
   return (
     <div style={{
@@ -532,7 +609,13 @@ function StepJobDesc({ onNext }) {
         <div style={{ width: "100%", position: "relative" }}>
           <textarea
             value={jd}
-            onChange={e => setJd(e.target.value)}
+            maxLength={4000}
+            onChange={e => {
+              const value = e.target.value;
+              setJd(value);
+              const nextError = validateAiInput(value, "Job description");
+              setInputError(nextError === "Job description is required" ? "" : nextError);
+            }}
             placeholder={`Paste the full job description here...\n\nTip: Include requirements, responsibilities, and "nice to haves" for the best match analysis.`}
             rows={14}
             style={{
@@ -561,7 +644,13 @@ function StepJobDesc({ onNext }) {
         <div style={{ width: "100%" }}>
           <input
             value={url}
-            onChange={e => setUrl(e.target.value)}
+            maxLength={4000}
+            onChange={e => {
+              const value = e.target.value;
+              setUrl(value);
+              const nextError = validateAiInput(value, "Job description URL");
+              setInputError(nextError === "Job description URL is required" ? "" : nextError);
+            }}
             placeholder="https://stripe.com/jobs/listing/senior-ux-designer/..."
             style={{
               width: "100%", background: "var(--card)", border: "1px solid var(--border)",
@@ -575,6 +664,10 @@ function StepJobDesc({ onNext }) {
             Supports LinkedIn, Greenhouse, Lever, Workday, and direct URLs.
           </p>
         </div>
+      )}
+
+      {inputError && (
+        <p style={{ fontSize: 11, color: "var(--red)", width: "100%" }}>{inputError}</p>
       )}
 
       <button
@@ -629,22 +722,6 @@ function TabOverview({ applied, analysis }) {
             description. Apply the priority actions to improve fit before exporting.
           </p>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 140 }}>
-          {[
-            ["Keywords",   78, "var(--blue-accent)"],
-            ["Experience", 85, "var(--green)"],
-            ["Skills",     55, "var(--red)"],
-            ["Summary",    62, "var(--blue-accent)"],
-          ].map(([label, val, color]) => (
-            <div key={label}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 9, letterSpacing: "0.15em", color: "var(--muted2)", textTransform: "uppercase" }}>{label}</span>
-                <span style={{ fontSize: 10, color, fontWeight: 500 }}>{val}</span>
-              </div>
-              <MiniBar value={val} color={color} />
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* Quick stat cards */}
@@ -675,7 +752,7 @@ function TabOverview({ applied, analysis }) {
             return (
             <div key={i} className="action-row">
               <Chip label={tag} color={color} bg={`${color}10`} />
-              <p style={{ fontSize: 11, color: "var(--cream)", lineHeight: 1.6, letterSpacing: "0.02em" }}>{text}</p>
+              <p style={{ fontSize: 14, color: "var(--cream)", lineHeight: 1.6, letterSpacing: "0.02em" }}>{text}</p>
             </div>
             );
           })}
@@ -703,23 +780,38 @@ function TabKeywords({ keywordsData }) {
           <Chip label={`${matchedKeywords.length} found`} color="var(--green)" bg="var(--green-d)" />
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {matchedKeywords.map(({ word }) => (
-            <div key={word}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "10px 14px",
-                  background: "var(--card)",
-                  border: "1px solid rgba(34, 201, 122, 0.2)",
-                }}
-              >
-                <span style={{ color: "var(--green)", fontSize: 10 }}>◈</span>
-                <span style={{ fontSize: 11, color: "var(--cream)", letterSpacing: "0.05em" }}>{word}</span>
+          {matchedKeywords.length > 0 ? (
+            matchedKeywords.map(({ word }) => (
+              <div key={word}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 14px",
+                    background: "var(--card)",
+                    border: "1px solid rgba(34, 201, 122, 0.2)",
+                  }}
+                >
+                  <span style={{ color: "var(--green)", fontSize: 10 }}>◈</span>
+                  <span style={{ fontSize: 11, color: "var(--cream)", letterSpacing: "0.05em" }}>{word}</span>
+                </div>
               </div>
+            ))
+          ) : (
+            <div
+              style={{
+                padding: "12px 14px",
+                background: "var(--card)",
+                border: "1px solid rgba(34, 201, 122, 0.2)",
+                color: "var(--muted2)",
+                fontSize: 11,
+                letterSpacing: "0.04em",
+              }}
+            >
+              No Matched Keywords Found
             </div>
-          ))}
+          )}
         </div>
       </div>
 
@@ -748,40 +840,199 @@ function TabKeywords({ keywordsData }) {
             );
           })}
         </div>
-        <div style={{ marginTop: 20, padding: "14px 16px", background: "var(--blue-accent-d)", border: "1px solid var(--blue-accent-m)" }}>
-          <p style={{ fontSize: 10, color: "var(--blue-accent)", letterSpacing: "0.15em", marginBottom: 6 }}>💡 Quick Add</p>
-          <p style={{ fontSize: 11, color: "var(--cream)", lineHeight: 1.65 }}>
-            Adding these {missingKeywords.length} keywords naturally across your resume could raise your match score by{" "}
-            <strong style={{ color: "var(--blue-accent)" }}>+18 points</strong>.
-          </p>
-        </div>
       </div>
     </div>
   );
 }
 
 // ─── Results: Tailored Resume Tab ─────────────────────────────────────────────
-function TailoredSection({ title, accent, children }) {
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-        <h3 style={{ fontFamily: "var(--syne)", fontSize: 13, fontWeight: 700, color: "#111", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-          {title}
-        </h3>
-        <div style={{ flex: 1, height: 1, background: `${accent}40` }} />
-      </div>
-      {children}
+
+function convertResumeJsonToHtml(improvedResume) {
+  if (!improvedResume || typeof improvedResume !== "object") return "";
+
+  const escape = (value = "") => String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+  const name = escape(improvedResume.name || "");
+  const title = escape(improvedResume.title || "");
+  const summary = escape(improvedResume.summary || "");
+  const sections = Array.isArray(improvedResume.sections) ? improvedResume.sections : [];
+
+  const sectionsHtml = sections
+    .map((section) => {
+      const heading = escape(section?.heading || "");
+      const items = Array.isArray(section?.items) ? section.items : [];
+      const itemsHtml = items.map((item) => `<li>${escape(item)}</li>`).join("");
+      return `
+        <section class="resume-edit-section">
+          <h3>${heading}</h3>
+          <ul>${itemsHtml}</ul>
+        </section>
+      `;
+    })
+    .join("");
+
+  return `
+    <div class="resume-edit-root">
+      <h1>${name}</h1>
+      <h2>${title}</h2>
+      <p>${summary}</p>
+      ${sectionsHtml}
     </div>
-  );
+  `;
 }
 
-function TabTailored({ selectedResumeId, jobDescription, improved, loading, error }) {
+class QuillErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(err) {
+    console.error("ReactQuill render error:", err);
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false });
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || null;
+    }
+    return this.props.children;
+  }
+}
+
+function TabTailored({ selectedResumeId, jobDescription, improved, loading, error, setImprovedResume }) {
   const accent = "#4A9EFF";
+  const [isEditing, setIsEditing] = useState(false);
+  const [editorContent, setEditorContent] = useState("");
+  const [saveStatus, setSaveStatus] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const quillModules = {
+    toolbar: [
+      [{ header: [1, 2, 3, false] }],
+      ["bold", "italic", "underline"],
+      [{ list: "ordered" }, { list: "bullet" }],
+      [{ align: [] }],
+      ["blockquote"],
+      ["clean"],
+    ],
+  };
+
+  const quillFormats = [
+    "header",
+    "bold",
+    "italic",
+    "underline",
+    "list",
+    "bullet",
+    "align",
+    "blockquote",
+  ];
+
+  const getCurrentResumeHtml = (value) => {
+    if (!value || typeof value !== "object") return "";
+    const rawHtml = typeof value.edited_html === "string" && value.edited_html.trim().length
+      ? value.edited_html
+      : convertResumeJsonToHtml(value);
+    return DOMPurify.sanitize(rawHtml || "");
+  };
+
+  useEffect(() => {
+    if (!improved) {
+      setEditorContent("");
+      return;
+    }
+
+    setEditorContent(getCurrentResumeHtml(improved));
+    setIsEditing(false);
+    setSaveStatus("");
+  }, [improved]);
+
+  const handleStartEdit = () => {
+    setEditorContent((prev) => {
+      const current = (prev || "").trim();
+      if (current.length) return prev;
+      return getCurrentResumeHtml(improved);
+    });
+    setIsEditing(true);
+    setSaveStatus("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditorContent(getCurrentResumeHtml(improved));
+    setIsEditing(false);
+    setSaveStatus("");
+  };
+
+  const handleSaveChanges = async () => {
+    const sanitizedHtml = DOMPurify.sanitize(editorContent || "");
+    if (!sanitizedHtml.trim()) {
+      setSaveStatus("Edited content is empty.");
+      return;
+    }
+    if (sanitizedHtml.length > 2_000_000) {
+      setSaveStatus("Edited content is too large.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveStatus("");
+    try {
+      const payload = {
+        resume_id: selectedResumeId,
+        edited_html: sanitizedHtml,
+      };
+
+      const res = await fetch(buildBackendUrl(ENDPOINTS.RESUME_SAVE_EDITED), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.detail || "Failed to save edited resume");
+      }
+
+      setImprovedResume((prev) => {
+        const base = prev && typeof prev === "object" ? prev : improved;
+        return {
+          ...(base || {}),
+          edited_html: sanitizedHtml,
+        };
+      });
+
+      setEditorContent(sanitizedHtml);
+      setIsEditing(false);
+      setSaveStatus("Changes saved.");
+    } catch (err) {
+      console.error("Save edited resume error:", err);
+      setSaveStatus(err?.message || "Failed to save edited resume.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!selectedResumeId || !jobDescription) return <div style={{padding: 32}}>Waiting for selected resume and job description...</div>;
   if (loading) return <Spinner label="Generating tailored resume..." />;
   if (error) return <div style={{padding: 32, color: "var(--red)"}}>{error}</div>;
   if (!improved) return null;
-  const { _meta, ...improvedData } = improved;
+  const { _meta, edited_html, ...improvedData } = improved;
+  const previewHtml = getCurrentResumeHtml({ ...improvedData, edited_html });
 
   return (
     <div style={{ padding: "32px 28px", maxWidth: 860, margin: "0 auto" }}>
@@ -792,30 +1043,204 @@ function TabTailored({ selectedResumeId, jobDescription, improved, loading, erro
           </p>
           <h3 style={{ fontFamily: "var(--syne)", fontSize: 22, fontWeight: 800 }}>AI-Tailored Resume</h3>
         </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {!isEditing ? (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              className="btn-ghost"
+              style={{ borderColor: "var(--blue-accent)", color: "var(--blue-accent)" }}
+            >
+              Edit Resume
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleSaveChanges}
+                className="btn-export"
+                disabled={saving}
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="btn-ghost"
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="resume-doc" style={{ background: "#fff", color: "#222" }}>
-        <div className="resume-doc__header">
-          <h1 style={{ fontFamily: "var(--syne)", fontSize: 30, fontWeight: 800, marginBottom: 4 }}>{improvedData.name}</h1>
-          <p style={{ fontSize: 14, color: accent, marginBottom: 16, letterSpacing: "0.08em" }}>{improvedData.title}</p>
-        </div>
-        <div className="resume-doc__body">
-          <TailoredSection title="Introduction" accent={accent}>
-            <p style={{ fontSize: 12, lineHeight: 1.8, color: "#444" }}>{improvedData.summary}</p>
-          </TailoredSection>
-          {Array.isArray(improvedData.sections) && improvedData.sections.map((section, idx) => (
-            <TailoredSection key={idx} title={section.heading} accent={accent}>
-              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
-                {Array.isArray(section.items) && section.items.map((item, i) => (
-                  <li key={i} style={{ fontSize: 11, color: "#555", lineHeight: 1.65, marginBottom: 4, paddingLeft: 14, position: "relative" }}>
-                    <span className="resume-doc__bullet-marker">▸</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </TailoredSection>
-          ))}
-        </div>
+      {saveStatus ? (
+        <p
+          style={{
+            marginBottom: 12,
+            fontSize: 11,
+            color: saveStatus === "Changes saved." ? "var(--green)" : "var(--red)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          {saveStatus}
+        </p>
+      ) : null}
+
+      <div className="resume-doc" style={{ background: "#fff", color: "#222", padding: 0 }}>
+        {isEditing ? (
+          <div style={{ padding: 14 }}>
+            <QuillErrorBoundary
+              resetKey={`${selectedResumeId}:${isEditing}`}
+              fallback={
+                <div>
+                  <p style={{ fontSize: 11, color: "var(--red)", marginBottom: 8 }}>
+                    Rich editor could not load in this environment. You can still edit HTML below.
+                  </p>
+                  <textarea
+                    value={editorContent}
+                    onChange={(e) => setEditorContent(e.target.value)}
+                    style={{
+                      width: "100%",
+                      minHeight: 520,
+                      border: "1px solid #d2d2d2",
+                      padding: 12,
+                      fontSize: 12,
+                      fontFamily: "var(--mono)",
+                      color: "#222",
+                      background: "#fff",
+                      outline: "none",
+                    }}
+                  />
+                </div>
+              }
+            >
+              <ReactQuill
+                theme="snow"
+                value={editorContent || previewHtml}
+                onChange={setEditorContent}
+                modules={quillModules}
+                formats={quillFormats}
+                style={{ minHeight: 560 }}
+              />
+            </QuillErrorBoundary>
+          </div>
+        ) : (
+          <div
+            className="resume-doc__body resume-preview-rendered"
+            style={{ padding: "28px 30px" }}
+            dangerouslySetInnerHTML={{ __html: previewHtml }}
+          />
+        )}
+        <style>{`
+          .resume-doc .resume-edit-root h1 {
+            font-family: var(--syne);
+            font-size: 30px;
+            font-weight: 800;
+            margin: 0 0 4px;
+            color: #111;
+          }
+          .resume-doc .resume-edit-root h2 {
+            margin: 0 0 16px;
+            font-size: 14px;
+            color: ${accent};
+            letter-spacing: 0.08em;
+            font-weight: 600;
+            text-transform: uppercase;
+          }
+          .resume-doc .resume-edit-root p {
+            font-size: 12px;
+            line-height: 1.8;
+            color: #444;
+            margin: 0 0 16px;
+          }
+          .resume-doc .resume-edit-root h3 {
+            margin: 22px 0 10px;
+            font-family: var(--syne);
+            font-size: 13px;
+            font-weight: 700;
+            color: #111;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-bottom: 1px solid ${accent}40;
+            padding-bottom: 6px;
+          }
+          .resume-doc .resume-edit-root ul {
+            list-style: disc;
+            margin: 0;
+            padding-left: 20px;
+          }
+          .resume-doc .resume-edit-root li {
+            font-size: 11px;
+            color: #555;
+            line-height: 1.65;
+            margin-bottom: 4px;
+          }
+
+          /* Saved Quill HTML does not include .resume-edit-root, so normalize preview typography here. */
+          .resume-doc .resume-preview-rendered {
+            white-space: normal;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.7;
+          }
+          .resume-doc .resume-preview-rendered h1 {
+            margin: 0 0 8px;
+            font-family: var(--syne);
+            font-size: 30px;
+            line-height: 1.2;
+            font-weight: 800;
+            color: #111;
+          }
+          .resume-doc .resume-preview-rendered h2 {
+            margin: 0 0 14px;
+            font-family: var(--syne);
+            font-size: 20px;
+            line-height: 1.3;
+            font-weight: 700;
+            color: #222;
+          }
+          .resume-doc .resume-preview-rendered h3 {
+            margin: 18px 0 8px;
+            font-family: var(--syne);
+            font-size: 15px;
+            line-height: 1.35;
+            font-weight: 700;
+            color: #222;
+          }
+          .resume-doc .resume-preview-rendered p,
+          .resume-doc .resume-preview-rendered li {
+            font-size: 12px;
+            color: #444;
+            line-height: 1.75;
+          }
+          .resume-doc .resume-preview-rendered ul,
+          .resume-doc .resume-preview-rendered ol {
+            margin: 0 0 12px;
+            padding-left: 22px;
+          }
+          .resume-doc .resume-preview-rendered .ql-size-small { font-size: 11px; }
+          .resume-doc .resume-preview-rendered .ql-size-large { font-size: 14px; }
+          .resume-doc .resume-preview-rendered .ql-size-huge  { font-size: 18px; }
+          .resume-doc .resume-preview-rendered img,
+          .resume-doc .resume-preview-rendered table {
+            max-width: 100%;
+            height: auto;
+          }
+
+          .resume-doc .ql-container {
+            min-height: 500px;
+            font-size: 12px;
+            color: #222;
+          }
+          .resume-doc .ql-editor h1,
+          .resume-doc .ql-editor h2,
+          .resume-doc .ql-editor h3 {
+            font-family: var(--syne);
+          }
+        `}</style>
       </div>
     </div>
   );
@@ -823,71 +1248,92 @@ function TabTailored({ selectedResumeId, jobDescription, improved, loading, erro
 
 // ─── Results Dashboard (shell + tab routing) ──────────────────────────────────
 function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, improvedResume, setImprovedResume }) {
-    async function handleExportDocx() {
+    async function handleExportPdf() {
       if (!improvedResume) return;
-      const { _meta, name, title, summary, sections } = improvedResume;
-      const doc = new Document({
-        sections: [
-          {
-            properties: {},
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({ text: name || "", bold: true, size: 48 }),
-                ],
-                spacing: { after: 120 },
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({ text: title || "", italics: true, size: 32, color: "888888" }),
-                ],
-                spacing: { after: 200 },
-              }),
-              new Paragraph({
-                text: "Introduction",
-                heading: "Heading2",
-                spacing: { after: 80 },
-              }),
-              new Paragraph({
-                text: summary || "",
-                spacing: { after: 200 },
-              }),
-              ...(Array.isArray(sections)
-                ? sections.flatMap((section) => [
-                    new Paragraph({
-                      text: section.heading,
-                      heading: "Heading2",
-                      spacing: { after: 80 },
-                    }),
-                    ...((Array.isArray(section.items) ? section.items : []).map(
-                      (item) =>
-                        new Paragraph({
-                          text: `• ${item}`,
-                          spacing: { after: 40 },
-                        })
-                    )),
-                  ])
-                : []),
-            ],
-          },
-        ],
-      });
-      const blob = await Packer.toBlob(doc);
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `${name ? name.replace(/\s+/g, "_") : "resume"}_tailored.docx`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(a.href);
-      }, 100);
+
+      const { _meta, edited_html, ...improvedData } = improvedResume;
+      const resumeHtml = DOMPurify.sanitize(
+        (typeof edited_html === "string" && edited_html.trim().length
+          ? edited_html
+          : convertResumeJsonToHtml(improvedData)) || ""
+      );
+      if (!resumeHtml.trim()) return;
+
+      const captureRoot = document.createElement("div");
+      captureRoot.style.position = "fixed";
+      captureRoot.style.left = "-10000px";
+      captureRoot.style.top = "0";
+      captureRoot.style.width = "850px";
+      captureRoot.style.background = "#fff";
+      captureRoot.style.color = "#222";
+      captureRoot.style.padding = "28px 30px";
+      captureRoot.style.boxSizing = "border-box";
+      captureRoot.style.zIndex = "-1";
+
+      captureRoot.innerHTML = `
+        <style>
+          .resume-export-root { font-family: Georgia, 'Times New Roman', serif; color: #222; line-height: 1.7; }
+          .resume-export-root h1 { margin: 0 0 8px; font-family: 'EB Garamond', Georgia, serif; font-size: 30px; line-height: 1.2; font-weight: 800; color: #111; }
+          .resume-export-root h2 { margin: 0 0 14px; font-family: 'EB Garamond', Georgia, serif; font-size: 20px; line-height: 1.3; font-weight: 700; color: #222; }
+          .resume-export-root h3 { margin: 18px 0 8px; font-family: 'EB Garamond', Georgia, serif; font-size: 15px; line-height: 1.35; font-weight: 700; color: #222; }
+          .resume-export-root p, .resume-export-root li { font-size: 12px; color: #444; line-height: 1.75; }
+          .resume-export-root ul, .resume-export-root ol { margin: 0 0 12px; padding-left: 22px; }
+          .resume-export-root .ql-size-small { font-size: 11px; }
+          .resume-export-root .ql-size-large { font-size: 14px; }
+          .resume-export-root .ql-size-huge { font-size: 18px; }
+          .resume-export-root img, .resume-export-root table { max-width: 100%; height: auto; }
+        </style>
+        <div class="resume-export-root">${resumeHtml}</div>
+      `;
+
+      document.body.appendChild(captureRoot);
+
+      try {
+        const canvas = await html2canvas(captureRoot, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          scrollY: 0,
+          windowWidth: captureRoot.scrollWidth,
+          windowHeight: captureRoot.scrollHeight,
+        });
+
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 22;
+        const usableWidth = pageWidth - margin * 2;
+        const usableHeight = pageHeight - margin * 2;
+
+        const imgData = canvas.toDataURL("image/png", 1.0);
+        const renderedHeight = (canvas.height * usableWidth) / canvas.width;
+
+        let heightLeft = renderedHeight;
+        let yOffset = margin;
+
+        pdf.addImage(imgData, "PNG", margin, yOffset, usableWidth, renderedHeight, undefined, "FAST");
+        heightLeft -= usableHeight;
+
+        while (heightLeft > 0) {
+          pdf.addPage();
+          yOffset = margin - (renderedHeight - heightLeft);
+          pdf.addImage(imgData, "PNG", margin, yOffset, usableWidth, renderedHeight, undefined, "FAST");
+          heightLeft -= usableHeight;
+        }
+
+        const name = (improvedData?.name || "resume").replace(/\s+/g, "_");
+        pdf.save(`${name}_tailored.pdf`);
+      } finally {
+        if (captureRoot.parentNode) captureRoot.parentNode.removeChild(captureRoot);
+      }
     }
   const [tab,     setTab]     = useState("overview");
   const [applied, setApplied] = useState({});
   const [saved,   setSaved]   = useState(false);
   const [improvedLoading, setImprovedLoading] = useState(false);
   const [improvedError, setImprovedError] = useState("");
+  const improveRequestKeyRef = useRef("");
+  const improveInFlightRef = useRef(false);
 
   const overallScore = analysis ? analysis.overallScore : 0;
 
@@ -896,17 +1342,33 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
 
   useEffect(() => {
     if (!resumeId || !jobDesc) return;
+
+    const requestKey = `${resumeId}::${String(jobDesc).trim()}`;
     const lastImproved = improvedResume && improvedResume._meta && improvedResume._meta.resumeId === resumeId && improvedResume._meta.jobDesc === jobDesc;
-    if (lastImproved) return;
+
+    if (lastImproved) {
+      improveRequestKeyRef.current = requestKey;
+      return;
+    }
+
+    if (improveInFlightRef.current && improveRequestKeyRef.current === requestKey) {
+      return;
+    }
+
     let active = true;
+    const controller = new AbortController();
+
+    improveRequestKeyRef.current = requestKey;
+    improveInFlightRef.current = true;
     setImprovedLoading(true);
     setImprovedError("");
     setImprovedResume(null);
 
-    fetch(`${API_BASE}/resumeParser/improve`, {
+    fetch(buildBackendUrl(ENDPOINTS.RESUME_IMPROVE), {
       method: "POST",
       headers: { "Content-Type": "application/json", ...getAuthHeaders() },
       body: JSON.stringify({ resume_id: resumeId, job_description: jobDesc }),
+      signal: controller.signal,
     })
       .then(async (res) => {
         const data = await res.json();
@@ -919,15 +1381,19 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
       })
       .catch((err) => {
         if (!active) return;
+        if (err?.name === "AbortError") return;
         setImprovedError(err?.message || "Failed to generate improved resume.");
       })
       .finally(() => {
         if (!active) return;
+        improveInFlightRef.current = false;
         setImprovedLoading(false);
       });
 
     return () => {
       active = false;
+      controller.abort();
+      improveInFlightRef.current = false;
     };
   }, [resumeId, jobDesc, improvedResume, setImprovedResume]);
 
@@ -956,11 +1422,11 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
           <button className="btn-ghost" onClick={onReset}>← New Analysis</button>
           <button
             className={`btn-export`}
-            onClick={handleExportDocx}
+            onClick={handleExportPdf}
             disabled={!improvedResume}
-            title={!improvedResume ? "No tailored resume to export" : "Export tailored resume as .docx"}
+            title={!improvedResume ? "No tailored resume to export" : "Export tailored resume as .pdf"}
           >
-            ↓ Export Tailored
+            ↓ Download
           </button>
         </div>
       </div>
@@ -974,6 +1440,7 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
             improved={improvedResume}
             loading={improvedLoading}
             error={improvedError}
+            setImprovedResume={setImprovedResume}
           />
         )}
       </div>
@@ -999,6 +1466,7 @@ function TopBar({ step }) {
             <a href="/home" className="menu-link">Home</a>
             <a href="/chat" className="menu-link">PDF Chatbot</a>
             <a href="/resume-parser" className="menu-link active">Resume Parser</a>
+            <UserMenu />
           </div>
         </div>
       </nav>
@@ -1037,10 +1505,6 @@ function TopBar({ step }) {
             </div>
           ))}
         </div>
-
-        {step === "results" && (
-          <div className="topbar__ats-badge">ATS Ready</div>
-        )}
       </div>
     </>
   );
@@ -1049,6 +1513,7 @@ function TopBar({ step }) {
 export default function Paaila() {
   const [step, setStep] = useState(() => storage.getItem('resume_step') || "resume");
   const [resumeId, setResumeId] = useState(() => storage.getItem('resume_resumeId') || "");
+  const [userName, setUserName] = useState("");
   const [analysis, setAnalysis] = useState(() => {
     try {
       const saved = storage.getItem('resume_analysis');
@@ -1075,6 +1540,24 @@ export default function Paaila() {
     }
   });
 
+  // Fetch user data on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(buildBackendUrl(ENDPOINTS.API_USER), {
+          headers: getAuthHeaders(),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setUserName(data?.name || "User");
+        }
+      } catch (err) {
+        console.error("Failed to fetch user data:", err);
+        setUserName("User");
+      }
+    })();
+  }, []);
+
   const handleResumeReady = (id) => {
     setResumeId(id || "");
     setStep("jobdesc");
@@ -1086,19 +1569,26 @@ export default function Paaila() {
       setStep("resume");
       return;
     }
-    setJobDesc(jobDescription);
-    storage.setItem('resume_jobDesc', jobDescription);
+    const normalizedJobDescription = sanitizeText(jobDescription);
+    const jobDescriptionError = validateAiInput(normalizedJobDescription, 'Job description');
+    if (jobDescriptionError) {
+      alert(jobDescriptionError);
+      setStep('jobdesc');
+      return;
+    }
+    setJobDesc(normalizedJobDescription);
+    storage.setItem('resume_jobDesc', normalizedJobDescription);
     setStep("scanning");
     try {
       const payload = JSON.stringify({
         resume_id: resumeId,
-        job_description: jobDescription,
+        job_description: normalizedJobDescription,
       });
       const headers = {
         "Content-Type": "application/json",
         ...getAuthHeaders(),
       };
-      const analysisRes = await fetch(`${API_BASE}/resumeParser/analyze`, {
+      const analysisRes = await fetch(buildBackendUrl(ENDPOINTS.RESUME_ANALYZE), {
         method: "POST",
         headers,
         body: payload,
@@ -1196,6 +1686,7 @@ export default function Paaila() {
             jobDesc={jobDesc}
             improvedResume={improvedResume}
             setImprovedResume={setImprovedResume}
+            userName={userName}
           />
         )}
       </div>

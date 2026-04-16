@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
+import { ENDPOINTS, buildBackendUrl } from '../config/api'
+import { normalizeEmail, sanitizeText, validateEmail, validateName, validateSearch } from '../utils/validation'
 import '../adminDashboard.css'
 
 const ROWS_PER_PAGE = 8
@@ -74,7 +76,7 @@ function StatCard({ label, value, sub, trend, trendType, icon, colour, loading }
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
-  const labels = { active: 'Active', inactive: 'Inactive', suspended: 'Suspended' }
+  const labels = { active: 'Active', inactive: 'Inactive' }
   return (
     <span className={`status-badge status-badge--${status}`}>
       <span className="status-badge-dot" />
@@ -85,6 +87,86 @@ function StatusBadge({ status }) {
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 export default function AdminDashboard() {
+  // Check if user is admin
+  const userType = localStorage.getItem('userType')
+  const isAdmin = (userType || '').toLowerCase() === 'admin'
+
+  // If not admin, show access denied message
+  if (!isAdmin) {
+    return (
+      <div className="admin-page">
+        {/* ── Navbar ── */}
+        <nav className="menu-bar">
+          <div className="menu-container">
+            <div className="menu-logo">
+              <span className="logo-text">
+                Paai<span className="logo-accent">la</span>
+              </span>
+            </div>
+            <div className="menu-links">
+              <a href="/home"          className="menu-link">Home</a>
+              <a href="/chat"          className="menu-link">PDF Chatbot</a>
+              <a href="/resume-parser" className="menu-link">Resume Parser</a>
+            </div>
+          </div>
+        </nav>
+
+        {/* ── Content ── */}
+        <div className="admin-content">
+          <div className="admin-header">
+            <h1 className="admin-title">
+              Access <span>Denied</span>
+            </h1>
+          </div>
+
+          {/* Access denied notification */}
+          <div style={{
+            borderRadius: '8px',
+            padding: '24px',
+            marginBottom: '16px',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              fontSize: '48px',
+              marginBottom: '16px',
+            }}>
+            </div>
+            <h2 style={{
+              fontSize: '24px',
+              fontWeight: '600',
+              marginBottom: '8px',
+              color: '#991b1b',
+            }}>
+              Admin Access Required
+            </h2>
+            <p style={{
+              fontSize: '14px',
+              color: '#dc2626',
+              marginBottom: '16px',
+            }}>
+              You do not have permission to access the admin dashboard. Only administrators can view this page.
+            </p>
+            <a
+              href="/home"
+              style={{
+                display: 'inline-block',
+                backgroundColor: '#dc2626',
+                color: 'white',
+                padding: '10px 20px',
+                borderRadius: '6px',
+                textDecoration: 'none',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
+            >
+              Go to Home
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const [stats,   setStats]   = useState(null)
   const [users,   setUsers]   = useState([])
   const [loading, setLoading] = useState(true)
@@ -98,8 +180,10 @@ export default function AdminDashboard() {
 
   // Edit modal state
   const [editingUser, setEditingUser] = useState(null)
-  const [editForm,    setEditForm]    = useState({ name: '', email: '' })
+  const [editForm,    setEditForm]    = useState({ name: '', user_type: 'normal' })
   const [editLoading, setEditLoading] = useState(false)
+  const [editErrors, setEditErrors] = useState({ name: '', user_type: '' })
+  const [searchError, setSearchError] = useState('')
 
   // Delete confirmation state
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -111,8 +195,8 @@ export default function AdminDashboard() {
       setError('')
       try {
         const [statsRes, usersRes] = await Promise.all([
-          fetch('http://127.0.0.1:8000/admin/stats', { headers: getAuthHeaders() }),
-          fetch('http://127.0.0.1:8000/admin/users', { headers: getAuthHeaders() }),
+          fetch(buildBackendUrl(ENDPOINTS.ADMIN_STATS), { headers: getAuthHeaders() }),
+          fetch(buildBackendUrl(ENDPOINTS.ADMIN_USERS_BASE), { headers: getAuthHeaders() }),
         ])
 
         if (!statsRes.ok || !usersRes.ok) {
@@ -150,24 +234,36 @@ export default function AdminDashboard() {
   /* ── Edit handler ── */
   const handleEditClick = (user) => {
     setEditingUser(user)
-    setEditForm({ name: user.name, email: user.email })
+    setEditForm({ name: user.name, user_type: user.user_type || 'normal' })
+    setEditErrors({ name: '', user_type: '' })
   }
 
   const handleEditSubmit = async () => {
-    if (!editForm.name.trim() || !editForm.email.trim()) {
-      alert('Name and email are required')
+    const normalizedName = sanitizeText(editForm.name)
+    const nameParts = normalizedName.split(' ').filter(Boolean)
+    const firstNameError = validateName(nameParts[0] || '', 'First name')
+    const lastNameError = validateName(nameParts[1] || '', 'Last name')
+    const userTypeError = !['admin', 'normal'].includes(editForm.user_type) ? 'Invalid user type' : ''
+    const nextErrors = {
+      name: firstNameError || lastNameError || '',
+      user_type: userTypeError,
+    }
+    setEditErrors(nextErrors)
+
+    if (nextErrors.name || nextErrors.user_type) {
+      alert(nextErrors.name || nextErrors.user_type)
       return
     }
 
     setEditLoading(true)
     try {
-      const res = await fetch(`http://127.0.0.1:8000/admin/users/${editingUser.id}`, {
+      const res = await fetch(`${buildBackendUrl(ENDPOINTS.ADMIN_USERS_BASE)}/${editingUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...getAuthHeaders(),
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({ name: normalizedName, user_type: editForm.user_type }),
       })
 
       if (!res.ok) {
@@ -178,7 +274,7 @@ export default function AdminDashboard() {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editingUser.id
-            ? { ...u, name: editForm.name, email: editForm.email }
+            ? { ...u, name: normalizedName, user_type: editForm.user_type }
             : u
         )
       )
@@ -202,7 +298,7 @@ export default function AdminDashboard() {
 
     setDeleteLoading(true)
     try {
-      const res = await fetch(`http://127.0.0.1:8000/admin/users/${deleteConfirm.id}`, {
+      const res = await fetch(`${buildBackendUrl(ENDPOINTS.ADMIN_USERS_BASE)}/${deleteConfirm.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       })
@@ -211,10 +307,8 @@ export default function AdminDashboard() {
         throw new Error('Failed to delete user')
       }
 
-      // Remove from local list
-      setUsers((prev) => prev.filter((u) => u.id !== deleteConfirm.id))
-      setDeleteConfirm(null)
-      alert('User deleted successfully')
+      // Reload the page after successful deletion
+      window.location.reload();
     } catch (err) {
       console.error('Delete failed:', err)
       alert('Failed to delete user')
@@ -232,7 +326,7 @@ export default function AdminDashboard() {
 
     // search by name or email
     if (search.trim()) {
-      const q = search.toLowerCase()
+      const q = sanitizeText(search).toLowerCase()
       list = list.filter(
         (u) => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)
       )
@@ -255,20 +349,31 @@ export default function AdminDashboard() {
   const startRow     = (page - 1) * ROWS_PER_PAGE + 1
   const endRow       = Math.min(page * ROWS_PER_PAGE, processed.length)
 
-  const FILTERS = ['all', 'active', 'inactive', 'suspended']
+  const FILTERS = ['all', 'active', 'inactive']
 
   const COLUMNS = [
     { key: 'id',     label: '#',       cls: 'col-num'     },
     { key: 'name',   label: 'Name'                        },
     { key: 'email',  label: 'Email'                       },
+    { key: 'user_type', label: 'User Type'              },
     { key: 'status', label: 'Status'                      },
     { key: 'joined', label: 'Joined'                      },
     { key: null,     label: 'Actions',  cls: 'col-actions' },
   ]
 
+
+  // Logout handler
+  const handleLogout = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    if (window.caches) {
+      caches.keys().then((names) => names.forEach((n) => caches.delete(n)));
+    }
+    window.location.href = '/home';
+  };
+
   return (
     <div className="admin-page">
-
       {/* ── Navbar ── */}
       <nav className="menu-bar">
         <div className="menu-container">
@@ -281,11 +386,9 @@ export default function AdminDashboard() {
             <a href="/home"          className="menu-link">Home</a>
             <a href="/chat"          className="menu-link">PDF Chatbot</a>
             <a href="/resume-parser" className="menu-link">Resume Parser</a>
-            <a href="/admin"         className="menu-link active">Admin</a>
-            <div className="nav-admin-badge">
-              <span className="nav-admin-badge-dot" />
-              Admin Panel
-            </div>
+            <button className="logout-btn" onClick={handleLogout} title="Logout and clear all data">
+              Logout
+            </button>
           </div>
         </div>
       </nav>
@@ -348,8 +451,15 @@ export default function AdminDashboard() {
                 type="text"
                 placeholder="Search by name or email..."
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+                maxLength={120}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setSearch(next)
+                  setPage(1)
+                  setSearchError(validateSearch(next) === 'Type a role or skill to search.' ? '' : validateSearch(next))
+                }}
               />
+              {searchError && <p className="admin-subtitle" style={{ margin: '6px 0 0 0', color: 'var(--red)' }}>{searchError}</p>}
             </div>
             <div className="table-filter-group">
               {FILTERS.map((f) => (
@@ -397,13 +507,13 @@ export default function AdminDashboard() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: '40px', textAlign: 'center' }}>
+                    <td colSpan={7} style={{ padding: '40px', textAlign: 'center' }}>
                       <div className="spinner" />
                     </td>
                   </tr>
                 ) : paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="table-empty">
                         <div className="table-empty-icon">◈</div>
                         <div className="table-empty-text">No users found</div>
@@ -428,6 +538,13 @@ export default function AdminDashboard() {
 
                       {/* Email */}
                       <td className="email-cell">{user.email}</td>
+
+                      {/* User Type */}
+                      <td>
+                        <span className={`user-type-badge user-type-badge--${user.user_type}`}>
+                          {user.user_type === 'admin' ? 'Admin' : 'Normal'}
+                        </span>
+                      </td>
 
                       {/* Status */}
                       <td><StatusBadge status={user.status} /></td>
@@ -516,19 +633,34 @@ export default function AdminDashboard() {
                   <input
                     type="text"
                     value={editForm.name}
-                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setEditForm({ ...editForm, name: value })
+                      const normalizedName = sanitizeText(value)
+                      const parts = normalizedName.split(' ').filter(Boolean)
+                      const firstNameError = validateName(parts[0] || '', 'First name')
+                      const lastNameError = validateName(parts[1] || '', 'Last name')
+                      setEditErrors((prev) => ({ ...prev, name: firstNameError || lastNameError || '' }))
+                    }}
                     placeholder="Enter name"
                   />
+                  {editErrors.name && <p className="admin-subtitle" style={{ marginTop: 6, color: 'var(--red)' }}>{editErrors.name}</p>}
                 </div>
                 
                 <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={editForm.email}
-                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                    placeholder="Enter email"
-                  />
+                  <label>User Type</label>
+                  <select
+                    value={editForm.user_type}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setEditForm({ ...editForm, user_type: value })
+                      setEditErrors((prev) => ({ ...prev, user_type: '' }))
+                    }}
+                  >
+                    <option value="normal">Normal User</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                  {editErrors.user_type && <p className="admin-subtitle" style={{ marginTop: 6, color: 'var(--red)' }}>{editErrors.user_type}</p>}
                 </div>
               </div>
 
@@ -543,7 +675,7 @@ export default function AdminDashboard() {
                 <button
                   className="btn-modal btn-modal--primary"
                   onClick={handleEditSubmit}
-                  disabled={editLoading}
+                  disabled={editLoading || Boolean(editErrors.name || editErrors.user_type)}
                 >
                   {editLoading ? 'Saving...' : 'Save Changes'}
                 </button>

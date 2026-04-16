@@ -1,8 +1,10 @@
+
 from pathlib import Path
 import json
 import os
 import re
-from functools import lru_cache
+import time
+from typing import Optional
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -12,9 +14,15 @@ from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
+# Configure HuggingFace Hub for better reliability
+os.environ["HF_HUB_TIMEOUT"] = "30"
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
+
 VECTOR_DB_DIR = Path("vector_dbs")
 VECTOR_DB_DIR.mkdir(exist_ok=True)
-LOCAL_RESUME_MODEL_DIR = Path(os.getenv("LOCAL_RESUME_MODEL_PATH", "llama_model"))
+
+# Cache for embeddings to avoid redownloading
+_embeddings_cache: Optional[HuggingFaceEmbeddings] = None
 
 STOPWORDS = {
     "the", "and", "for", "with", "from", "that", "this", "will", "your", "you", "are", "our",
@@ -71,16 +79,114 @@ def improve_resume_json(resume_id: str, job_description: str) -> dict | None:
         content = raw.content if hasattr(raw, "content") else str(raw)
         print("[improveResume][model-ollama] Raw response:")
         print(content)
-        model_payload = _extract_json_object(content)
+        model_payload = _extract_json_object(content)        
         # Basic validation
         if not model_payload or not isinstance(model_payload, dict):
             raise ValueError("Model did not return a valid JSON object for improved resume")
         if not model_payload.get("sections"):
             raise ValueError("Improved resume JSON missing 'sections'")
-        return model_payload
+        return _normalize_improved_resume_payload(model_payload)
     except Exception as ollama_exc:
         raise RuntimeError(f"Ollama fallback failed for improved resume: {str(ollama_exc)}")
 
+
+def _resume_item_to_text(item) -> str:
+    """Convert model-returned section item variants into a display-safe single string."""
+    if item is None:
+        return ""
+
+    if isinstance(item, str):
+        return item.strip()
+
+    if isinstance(item, (int, float, bool)):
+        return str(item)
+
+    if isinstance(item, list):
+        parts = [_resume_item_to_text(x) for x in item]
+        parts = [p for p in parts if p]
+        return "; ".join(parts)
+
+    if isinstance(item, dict):
+        lead_keys = [
+            "role", "title", "name", "degree", "institution", "university", "company", "dates", "tools"
+        ]
+        lead_parts = []
+        for key in lead_keys:
+            value = _resume_item_to_text(item.get(key))
+            if value:
+                lead_parts.append(value)
+
+        detail_parts = []
+        for key in ("description", "summary"):
+            value = _resume_item_to_text(item.get(key))
+            if value:
+                detail_parts.append(value)
+
+        for key in ("bulletPoints", "items"):
+            value = item.get(key)
+            if isinstance(value, list):
+                bullets = [_resume_item_to_text(x) for x in value]
+                bullets = [b for b in bullets if b]
+                if bullets:
+                    detail_parts.append("; ".join(bullets))
+
+        lead = " | ".join(lead_parts)
+        details = "; ".join(detail_parts)
+
+        if lead and details:
+            return f"{lead}: {details}"
+        if details:
+            return details
+        if lead:
+            return lead
+
+        # Fallback for uncommon dict structures.
+        generic = []
+        for value in item.values():
+            text = _resume_item_to_text(value)
+            if text:
+                generic.append(text)
+        return "; ".join(generic)
+
+    return ""
+
+
+def _normalize_improved_resume_payload(payload: dict) -> dict:
+    """Normalize improved resume output to the strict frontend schema."""
+    name = str(payload.get("name", "")).strip()
+    title = str(payload.get("title", "")).strip()
+    summary = str(payload.get("summary", "")).strip()
+
+    raw_sections = payload.get("sections")
+    if not isinstance(raw_sections, list):
+        raw_sections = []
+
+    normalized_sections = []
+    for idx, section in enumerate(raw_sections):
+        if not isinstance(section, dict):
+            continue
+
+        heading = str(section.get("heading", "")).strip() or f"Section {idx + 1}"
+        raw_items = section.get("items", [])
+
+        if not isinstance(raw_items, list):
+            raw_items = [raw_items]
+
+        items = []
+        for entry in raw_items:
+            text = _resume_item_to_text(entry)
+            if text:
+                items.append(text)
+
+        normalized_sections.append({"heading": heading, "items": items})
+
+    return {
+        "name": name,
+        "title": title,
+        "summary": summary,
+        "sections": normalized_sections,
+    }
+    
 def _extract_json_object(text: str) -> dict | None:
     """Best-effort extraction of the first JSON object from model output."""
     if not text:
@@ -195,9 +301,6 @@ def _apply_overlap_guardrails(analysis: dict, job_description: str, resume_text:
     guarded = dict(analysis)
     guarded["overallScore"] = max(min(blended_score, 100), 0)
 
-    guarded["keywordsMatched"] = max(min(guarded.get("keywordsMatched", 0), matched_terms), 0)
-    guarded["keywordsMissing"] = max(guarded.get("keywordsMissing", 0), total_terms - matched_terms)
-
     return guarded
 
 
@@ -273,7 +376,10 @@ def _validate_keywords(payload: dict | None, job_description: str, resume_text: 
         word = str(item.get("word", "")).strip()
         if not word:
             raise ValueError("matchedKeywords.word cannot be empty")
-        norm_matched.append({"word": word})
+        word_norm = _normalize_text(word)
+        # Matched keyword must be grounded in both JD and resume.
+        if word_norm in jd_text and word_norm in resume_norm:
+            norm_matched.append({"word": word})
 
     norm_missing = []
     for item in missing[:40]:
@@ -307,32 +413,6 @@ def _validate_keywords(payload: dict | None, job_description: str, resume_text: 
         "matchedKeywords": norm_matched,
         "missingKeywords": norm_missing,
     }
-
-
-@lru_cache(maxsize=1)
-def _get_local_resume_pipeline():
-    from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
-    if not LOCAL_RESUME_MODEL_DIR.exists():
-        raise RuntimeError(f"Local resume model directory not found: {LOCAL_RESUME_MODEL_DIR}")
-
-    tokenizer = AutoTokenizer.from_pretrained(
-        str(LOCAL_RESUME_MODEL_DIR),
-        local_files_only=True,
-        fix_mistral_regex=True,
-    )
-    try:
-        model = AutoModelForCausalLM.from_pretrained(
-            str(LOCAL_RESUME_MODEL_DIR),
-            local_files_only=True,
-            device_map="auto",
-        )
-    except Exception:
-        model = AutoModelForCausalLM.from_pretrained(
-            str(LOCAL_RESUME_MODEL_DIR),
-            local_files_only=True,
-        )
-    return pipeline("text-generation", model=model, tokenizer=tokenizer)
 
 
 def analyze_resume_first_pass(resume_id: str, job_description: str) -> dict | None:
@@ -373,7 +453,23 @@ def analyze_resume_first_pass(resume_id: str, job_description: str) -> dict | No
             - fixesApplied must be 0.
             - priorityActions must contain 3-5 actions.
             - Focus on keyword alignment and section-level improvement opportunities.
-            - matchedKeywords should contain strongest present terms.
+            - matchedKeywords should contain strongest present terms, if there are none just return with "No Matching Keywords" for the matched keywords section, for all the other sections return normally;
+                {{
+                    "overallScore": number,
+                    "keywordsMatched": number,
+                    "keywordsMissing": number,
+                    "sectionsToImprove": number,
+                    "fixesApplied": number,
+                    "priorityActions": [
+                        {{"priority": "HIGH|MEDIUM|LOW", "text": "action sentence"}}
+                    ],
+                    "matchedKeywords": [
+                        {{"word": "No Matching Keywords"}}
+                    ],
+                    "missingKeywords": [
+                        {{"word": "keyword", "priority": "HIGH|MEDIUM|LOW"}}
+                    ]
+                }}
             - missingKeywords should contain important gaps.
             - INCLUDE the priority of missing keywords as HIGH, MEDIUM, or LOW based on their importance in the job description and absence in the resume.
             - Include the matched keywords such that each is a separate json object with a "word" field. Do not return them as a comma-separated string or in a single field. for e.g. "word": "UX", "word": "design", "word": "research" is correct, while "words": "UX, design, research" is not.
@@ -468,8 +564,46 @@ def analyze_resume_keywords(resume_id: str, job_description: str) -> dict | None
     except Exception as ollama_exc:
         raise RuntimeError(f"Ollama fallback failed for keywords: {str(ollama_exc)}")
 
-def get_embeddings():
-    return HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+def get_embeddings(max_retries: int = 3):
+    """
+    Get embeddings with retry logic and caching.
+    Downloads the sentence-transformers model from HuggingFace with exponential backoff.
+    
+    Args:
+        max_retries: Number of retries if download fails
+    
+    Returns:
+        HuggingFaceEmbeddings instance
+    
+    Raises:
+        RuntimeError: If unable to load embeddings after all retries
+    """
+    global _embeddings_cache
+    
+    # Return cached embeddings if available
+    if _embeddings_cache is not None:
+        return _embeddings_cache
+    
+    for attempt in range(max_retries):
+        try:
+            print(f"[Embeddings] Loading sentence-transformers model (attempt {attempt + 1}/{max_retries})...")
+            embeddings = HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-MiniLM-L6-v2",
+                model_kwargs={"trust_remote_code": True}
+            )
+            _embeddings_cache = embeddings
+            print("[Embeddings] Model loaded successfully and cached")
+            return embeddings
+        except Exception as e:
+            wait_time = 2 ** attempt  # Exponential backoff: 1s, 2s, 4s
+            if attempt < max_retries - 1:
+                print(f"[Embeddings] Error loading model: {str(e)}")
+                print(f"[Embeddings] Retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                error_msg = f"[Embeddings] Failed to load after {max_retries} attempts: {str(e)}"
+                print(f"ERROR: {error_msg}")
+                raise RuntimeError(error_msg) from e
 
 def create_or_load_vectordb(document_id):
     """
@@ -479,37 +613,52 @@ def create_or_load_vectordb(document_id):
         document_id: ID of the PDF document
     
     Returns:
-        FAISS vector store
+        FAISS vector store or None if failed
     """
-    vectordb_path = VECTOR_DB_DIR / document_id
+    try:
+        vectordb_path = VECTOR_DB_DIR / document_id
 
-    if vectordb_path.exists():
+        if vectordb_path.exists():
+            print(f"[VectorDB] Loading existing vector database for {document_id}...")
+            embeddings = get_embeddings()
+            vectordb = FAISS.load_local(str(vectordb_path), embeddings, allow_dangerous_deserialization=True)
+            print(f"[VectorDB] Successfully loaded vector database for {document_id}")
+            return vectordb
+
+        print(f"[VectorDB] Creating new vector database for {document_id}...")
+        text = load_pdf_text(document_id)
+
+        if not text:
+            print(f"[VectorDB] WARNING: No text found for document {document_id}")
+            return None
+
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=500,
+            chunk_overlap=100,
+            separators=["\n\n", "\n", " ", ""]
+        )
+
+        chunks = text_splitter.split_text(text)
+        print(f"[VectorDB] Split document into {len(chunks)} chunks")
+
+        docs = [Document(page_content=chunk, metadata={"source": document_id}) for chunk in chunks]
+
         embeddings = get_embeddings()
-        vectordb = FAISS.load_local(str(vectordb_path), embeddings, allow_dangerous_deserialization=True)
+
+        print(f"[VectorDB] Creating FAISS index with embeddings...")
+        vectordb = FAISS.from_documents(docs, embeddings)
+
+        vectordb.save_local(str(vectordb_path))
+        print(f"[VectorDB] Successfully created and saved vector database for {document_id}")
+
         return vectordb
-
-    text = load_pdf_text(document_id)
-
-    if not text:
+    except RuntimeError as e:
+        # Re-raise embedding loading errors so they propagate properly
+        print(f"[VectorDB] ERROR: {str(e)}")
+        raise
+    except Exception as e:
+        print(f"[VectorDB] ERROR creating/loading vector database for {document_id}: {str(e)}")
         return None
-
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500,
-        chunk_overlap=100,
-        separators=["\n\n", "\n", " ", ""]
-    )
-
-    chunks = text_splitter.split_text(text)
-
-    docs = [Document(page_content=chunk, metadata={"source": document_id}) for chunk in chunks]
-
-    embeddings = get_embeddings()
-
-    vectordb = FAISS.from_documents(docs, embeddings)
-
-    vectordb.save_local(str(vectordb_path))
-
-    return vectordb
 
 def answer_question_ollama(document_id, question, model_name="llama3.1:8b"):
     """
