@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, UploadFile, Depends, Header, Query, Body, Form, File
+from fastapi import FastAPI, HTTPException, UploadFile, Depends, Header, Query, Form, File
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,12 +9,11 @@ from models.database import init_db, get_db, SessionLocal
 from models.schemas import RegisterRequest, LoginRequest, AuthResponse, UserResponse
 from models.user import User
 from models.storage import Document, Resume, ChatHistory
-from models.storage import ChatHistory, Document, Resume
-from pathlib import Path
 from datetime import datetime, timezone
 from service.pdf_processing import save_pdf_text
 from service.qa_processing import improve_resume_json
 import os
+from dotenv import load_dotenv
 from pathlib import Path
 from PyPDF2 import PdfReader
 from service.qa_processing import answer_question_ollama
@@ -42,9 +41,27 @@ from models.validation import (
     validate_profile_image_upload,
 )
 
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "secret_key")
+load_dotenv()
+
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "").strip()
+if not JWT_SECRET_KEY:
+    raise RuntimeError("Missing required environment variable: JWT_SECRET_KEY")
+
+if JWT_SECRET_KEY.lower() in {"secret_key", "changeme", "default", "password"}:
+    raise RuntimeError("JWT_SECRET_KEY is insecure. Set a strong random value in environment variables.")
+
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 JWT_EXPIRATION_MINUTES = int(os.getenv("JWT_EXPIRATION_MINUTES", "20"))
+
+cors_raw = os.getenv(
+    "CORS_ALLOW_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
+)
+CORS_ALLOW_ORIGINS = [origin.strip().rstrip("/") for origin in cors_raw.split(",") if origin.strip()]
+if not CORS_ALLOW_ORIGINS:
+    raise RuntimeError("CORS_ALLOW_ORIGINS must include at least one origin")
+if "*" in CORS_ALLOW_ORIGINS:
+    raise RuntimeError("CORS_ALLOW_ORIGINS cannot include '*' when credentials are enabled")
 
 # Initialize database on startup
 init_db()
@@ -215,7 +232,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=CORS_ALLOW_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -644,8 +661,6 @@ RESUME_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 PROFILES_UPLOAD_DIR = Path("uploads/profiles")
 PROFILES_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-pdf_text_store = {}
 
 @app.get("/documents/", tags=["PDF Documents"], summary="List all uploaded PDF documents")
 def list_documents(

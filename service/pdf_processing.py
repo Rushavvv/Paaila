@@ -19,27 +19,6 @@ import re
 PDF_STORAGE = Path("pdf_texts").resolve()
 PDF_STORAGE.mkdir(parents=True, exist_ok=True)
 
-def extract_first_word_from_pdf(file):
-    """
-    Extract the first word from the first page of a PDF file-like object.
-
-    Args:
-        file: A file-like object containing the PDF data.
-
-    Returns:
-        str: The first word found in the first page, or 'document' if none found.
-    """
-    pdf_reader = PdfReader(file)
-    text = ""
-    for page in pdf_reader.pages:
-        text += page.extract_text() or ""
-        if text:
-            break
-    match = re.search(r"\b(\w+)\b", text)
-    if match:
-        return match.group(1)
-    return "document"
-
 async def save_pdf_text(file, document_id):
     """
     Extract all text from a PDF file and save it to a text file.

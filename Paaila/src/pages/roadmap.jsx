@@ -1,6 +1,6 @@
 // RoadmapPage.jsx - Main roadmap UI for career tracks
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 // React imports for state and routing
 import { useParams, useNavigate } from 'react-router-dom';
 import '../roadmap.css';

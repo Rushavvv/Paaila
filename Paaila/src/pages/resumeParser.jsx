@@ -1247,7 +1247,7 @@ function TabTailored({ selectedResumeId, jobDescription, improved, loading, erro
 }
 
 // ─── Results Dashboard (shell + tab routing) ──────────────────────────────────
-function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, improvedResume, setImprovedResume }) {
+function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, improvedResume, setImprovedResume, userName }) {
     async function handleExportPdf() {
       if (!improvedResume) return;
 
@@ -1321,8 +1321,8 @@ function ResultsDashboard({ onReset, analysis, keywordsData, resumeId, jobDesc, 
           heightLeft -= usableHeight;
         }
 
-        const name = (improvedData?.name || "resume").replace(/\s+/g, "_");
-        pdf.save(`${name}_tailored.pdf`);
+        const cleanUserName = (userName || "resume").replace(/\s+/g, "_");
+        pdf.save(`${cleanUserName}_resume.pdf`);
       } finally {
         if (captureRoot.parentNode) captureRoot.parentNode.removeChild(captureRoot);
       }

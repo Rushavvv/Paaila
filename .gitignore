@@ -51,6 +51,14 @@ llama_model/
 vector_dbs/
 *.faiss
 
+# Project-generated data and uploads
+pdf_texts/
+uploads/
+screenshots/
+
+# Frontend build artifacts
+Paaila/dist/
+
 # Jupyter
 .ipynb_checkpoints
 *.ipynb
@@ -65,3 +73,8 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+
+# Local caches and logs
+.pytest_cache/
+.mypy_cache/
+*.log

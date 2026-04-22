@@ -209,7 +209,6 @@ export default function AdminDashboard() {
         setStats(statsData || { totalUsers: 0, totalResumes: 0, activeUsers: 0 })
         setUsers(usersData?.users || [])
       } catch (err) {
-        console.error('Failed to load admin data:', err)
         setStats({ totalUsers: 0, totalResumes: 0, activeUsers: 0 })
         setUsers([])
         setError('Could not load admin data from server.')
@@ -281,8 +280,7 @@ export default function AdminDashboard() {
       setEditingUser(null)
       alert('User updated successfully')
     } catch (err) {
-      console.error('Edit failed:', err)
-      alert('Failed to update user')
+      setError('Failed to update user. Please try again.')
     } finally {
       setEditLoading(false)
     }
@@ -310,8 +308,7 @@ export default function AdminDashboard() {
       // Reload the page after successful deletion
       window.location.reload();
     } catch (err) {
-      console.error('Delete failed:', err)
-      alert('Failed to delete user')
+      setError('Failed to delete user. Please try again.')
     } finally {
       setDeleteLoading(false)
     }

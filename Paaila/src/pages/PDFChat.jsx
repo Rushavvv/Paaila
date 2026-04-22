@@ -22,6 +22,7 @@ function PDFChat() {
   // User's current question input
   const [question, setQuestion]         = useState('')
   const [inputError, setInputError]     = useState('')
+  const [asyncError, setAsyncError]     = useState('')
   // Chat message history (array of {id, type, text, ...})
   const [chatMessages, setChatMessages] = useState([])
   // Should scroll to bottom after new message
@@ -79,6 +80,7 @@ function PDFChat() {
   /* ── Load documents ── */
   const loadDocuments = async () => {
     try {
+      setAsyncError('')
       const response = await fetch(buildBackendUrl(ENDPOINTS.DOCUMENTS), {
         headers: { ...getAuthHeaders() },
       })
@@ -86,8 +88,7 @@ function PDFChat() {
       const data = await response.json()
       setDocuments(data.documents || [])
     } catch (error) {
-      console.error('Fetch error:', error)
-      alert('Error loading documents!')
+      setAsyncError('Could not load documents. Please refresh and try again.')
     }
   }
 
@@ -105,6 +106,7 @@ function PDFChat() {
       // Show loading state for chat
       setChatMessages([{ id: 'loading-chat', type: 'bot', text: 'Loading chat history...', isLoading: true }]);
       try {
+        setAsyncError('')
         const response = await fetch(
           `${buildBackendUrl(ENDPOINTS.CHAT_HISTORY)}?document_id=${encodeURIComponent(selectedDoc)}`,
           { headers: { ...getAuthHeaders() } }
@@ -121,7 +123,7 @@ function PDFChat() {
         setChatMessages(historyMessages)
       } catch (error) {
         setChatMessages([])
-        console.error(error)
+        setAsyncError('Could not load chat history for this document.')
       }
     }
     if (selectedDoc) {
@@ -147,6 +149,7 @@ function PDFChat() {
     }
     const fetchSummary = async () => {
       try {
+        setAsyncError('')
         const response = await fetch(buildBackendUrl(ENDPOINTS.SUMMARIZE), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -156,7 +159,7 @@ function PDFChat() {
         setSummaryText(data.summary || 'No summary available.')
         sessionStorage.setItem(localKey, data.summary || 'No summary available.')
       } catch (error) {
-        console.error(error)
+        setAsyncError('Could not generate summary right now.')
         setSummaryText('Error generating summary.')
       } finally {
         setSummaryLoading(false)
@@ -182,6 +185,7 @@ function PDFChat() {
     const formData = new FormData()
     formData.append('file', file)
     try {
+      setAsyncError('')
       const response = await fetch(buildBackendUrl(ENDPOINTS.UPLOAD), {
         method: 'POST',
         headers: { ...getAuthHeaders() },
@@ -197,7 +201,7 @@ function PDFChat() {
       await loadDocuments()
       setSelectedDoc(data.document_id)
     } catch (error) {
-      console.error(error)
+      setAsyncError('Failed to upload PDF. Please try again.')
       alert('Failed to upload PDF!')
     }
   }
@@ -226,6 +230,7 @@ function PDFChat() {
     const currentQuestion = sanitizeText(question)
     setQuestion('')
     try {
+      setAsyncError('')
       const response = await fetch(buildBackendUrl(ENDPOINTS.CHAT), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
@@ -249,7 +254,7 @@ function PDFChat() {
         return updated
       })
     } catch (error) {
-      console.error(error)
+      setAsyncError('Failed to get an answer. Please try again.')
       alert('Failed to get answer!')
       setChatMessages((prev) => prev.filter((msg) => msg.id !== loadingId))
     }
@@ -271,7 +276,7 @@ function PDFChat() {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
     } catch (e) {
-      // ignore errors
+      setAsyncError('Failed to clear all data on server. Local UI was reset.')
     }
     // Clear UI and storage
     setChatMessages([]);
@@ -331,6 +336,11 @@ function PDFChat() {
           <span className="header-eyebrow">AI-Powered Document Intelligence</span>
           <h1>PDF <span>Chatbot</span></h1>
           <p>Upload a document, then ask anything about it.</p>
+          {asyncError && (
+            <p style={{ marginTop: 8, color: 'var(--red)', fontWeight: 600 }}>
+              {asyncError}
+            </p>
+          )}
         </div>
 
         {/* Two-column layout */}
@@ -397,26 +407,31 @@ function PDFChat() {
                   <button
                     style={{ background: 'var(--blue)', color: '#09090A', border: 'none', borderRadius: 12, padding: '4px 12px', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', marginLeft: 8 }}
                     onClick={async () => {
-                      if (!window.confirm('Are you sure you want to delete this document and all its data?')) return;
-                      const token = localStorage.getItem('token');
-                      const res = await fetch(`${buildBackendUrl(ENDPOINTS.DOCUMENTS_BASE)}/${encodeURIComponent(selectedDoc)}`, {
-                        method: 'DELETE',
-                        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (res.ok) {
-        alert('Document deleted.');
-        setSelectedDoc('');
-        await loadDocuments();
-        setChatMessages([]);
-        setSummaryText('');
-      } else {
-        alert('Failed to delete document.');
-      }
-    }}
-    title="Delete this document and all its data"
-  >
-    Delete
-  </button>
+                      try {
+                        if (!window.confirm('Are you sure you want to delete this document and all its data?')) return;
+                        setAsyncError('')
+                        const token = localStorage.getItem('token');
+                        const res = await fetch(`${buildBackendUrl(ENDPOINTS.DOCUMENTS_BASE)}/${encodeURIComponent(selectedDoc)}`, {
+                          method: 'DELETE',
+                          headers: token ? { Authorization: `Bearer ${token}` } : {},
+                        });
+                        if (res.ok) {
+                          alert('Document deleted.');
+                          setSelectedDoc('');
+                          await loadDocuments();
+                          setChatMessages([]);
+                          setSummaryText('');
+                        } else {
+                          alert('Failed to delete document.');
+                        }
+                      } catch (error) {
+                        setAsyncError('Failed to delete document. Please try again.')
+                      }
+                    }}
+                    title="Delete this document and all its data"
+                  >
+                    Delete
+                  </button>
                 )}
               </div>
 

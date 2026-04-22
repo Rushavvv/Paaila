@@ -1,5 +1,5 @@
 // Import React and hooks for state management
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ENDPOINTS, buildBackendUrl } from '../config/api';
 import { normalizeEmail, sanitizeText, validateEmail, validateName, validatePassword, validatePhone } from '../utils/validation';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BACKEND_BASE_URL, ENDPOINTS, buildBackendUrl } from '../config/api';
 import { sanitizeText, validateEmail, validateImageFile, validateName, validatePhone } from '../utils/validation';
@@ -74,7 +74,7 @@ export default function ProfilePage() {
         setError(null);
       } catch (err) {
         setError(err.message || 'Failed to load user profile');
-        console.error('Error fetching user data:', err);
+        setFormMessage({ type: 'error', text: 'Could not load your profile. Please refresh and try again.' });
       } finally {
         setLoading(false);
       }
@@ -192,7 +192,7 @@ export default function ProfilePage() {
       }
     } catch (err) {
       setFormMessage({ type: 'error', text: 'Could not save your profile. Please try again.' });
-      console.error('Error saving profile:', err);
+      setError('Profile update failed.');
     } finally {
       setIsSaving(false);
     }
@@ -235,7 +235,7 @@ export default function ProfilePage() {
         type: 'error',
         text: 'Could not remove profile photo. Please try again.',
       });
-      console.error('Error removing profile image:', err);
+      setError('Profile photo removal failed.');
     } finally {
       setIsRemoving(false);
     }
