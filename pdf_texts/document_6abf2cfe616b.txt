@@ -1,0 +1,50 @@
+S.No. Module TitleModule 
+CodeLevel Period Credit Course Assesment ComponentPercentage 
+WeightingFinal Due 
+WeekCoursework Submission Deadline
+& Exam Date
+1 Artificial Intelligence CU6051NI 6 SEM1 15Computing, Artificial 
+IntelligenceCoursework 1 (Presentation of Research) 25% Week 8 Wednesday, December 17, 2025
+Milestone  for Coursework 2 (Artefact) Week 11 Wednesday, January 7, 2026
+Coursework 2 (Artefact) Week 13 Wednesday, January 21, 2026
+2 Project CS6P05NI 6 YEAR 30Computing, 
+Netwoking, Artificial 
+IntelligenceCoursework (Project Interim Report - 3500 words) 25% Week 10 Tuesday, December 30, 2025
+Coursework (Project Process including Project Artefacts)
+a. Proposal (5%)
+b. Log and Artefacts (10% / 10%)25%Week 6
+Week 24Wednesday, December 3, 2025
+Wednesday, April 22, 2026
+Coursework (Final Project Report - 8000 words) 40% Week 24 Wednesday, April 22, 2026
+Practical (Viva) 10% Week 27 Thursday - Wednesday, 7 May - 13 May 2026
+3 Career Development Learning CS6W50NI 6 SEM2 15Computing, Artificial 
+Intelligence, 
+MultimediaCoursework (Learning Portfolio with Evidence - 3000 words)
+Coursework (Slides-based presentation (5-8 slides) and reflective summary - 300 words)
+Coursework (In-Class Poster Portfolio Presentation)100% Week 14 Wednesday, May 27, 2026
+4 Applied Machine Learning CC6057NI 6 SEM1 15 Artificial Intelligence First Milestone for Coursework (2,500 words + artefact) Weeek 8 Monday, December 15, 2025
+Second Milestone for Coursework (2,500 words + artefact) Week 10 Wednesday, December 31, 2025
+Coursework (2,500 words + artefact) Week 13 Monday, January 19, 2026
+Unseen exam (2 hours) assesses the students’knowledge and understanding of the key issues of 
+Machine Learning and its application.40% Week 14 Thursday - Wednesday, 22 January - 28 January 2026
+5 Big Data And Data Mining CT6008NI 6 YEAR 30 Artificial IntelligenceFirst Milestone for Groupwork: Based on a given business scenario, develop a data warehouse 
+solution, and apply data mining techniques to solve given business problem (2000 words report + 
+application)Week 17 Wednesday, March 4, 2026
+Second Milestone  for Groupwork: Based on a given business scenario, develop a data 
+warehouse solution, and apply data mining techniques to solve given business problem (2000 
+words report + application)Week 21 Wednesday, April 1, 2026
+Groupwork: Based on a given business scenario, develop a data warehouse solution, and apply 
+data mining techniques to solve given business problem (2000 words report + application)Week 23 Wednesday, April 15, 2026
+Written Exam (Unseen exam - 2 hours) 40% Week 29 Thursday - Wednesday, 21 May - 27 May 2026AY 2025-26 BSc IT Assessment Schedule - Level 6
+75%
+60%
+60%S.No. Module TitleModule 
+CodeLevel Period Credit Course Assesment ComponentPercentage 
+WeightingFinal Due 
+WeekCoursework Submission Deadline
+& Exam Date
+6 Computer Vision CT6057NI 6 SEM2 15 Artificial Intelligence First Milestone for Coursework: Laboratory report and Research essay (3000 words) Week 8 Monday, April 13, 2026
+Second Milestone for Coursework: Laboratory report and Research essay (3000 words) Week 10 Wednesday, April 29, 2026
+Coursework: Laboratory report and Research essay (3000 words) Week 13 Wednesday, May 20, 2026
+Written Exam (Unseen exam - 2 hours) 40% Week 14 Thursday - Wednesday, 21 May - 27 May 2026
+Note: The exact examination dates will be communicated later via MST Platform and College Email60%

@@ -1,0 +1,780 @@
+
+/*
+  Importing Cormorant Garamond and DM Sans fonts for the roadmap page
+  These fonts are used for headings and body text throughout the roadmap UI
+*/
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:wght@300;400;500&display=swap');
+
+/*
+  Color tokens, font variables, and base styles for the roadmap theme
+  These set up the background, text, and accent colors for the whole page
+  --bg, --copper, etc. are CSS variables for easy theme management
+*/
+.rp-root {
+  /*
+    Root container for the roadmap page
+    Applies global font, color, and layout settings
+  */
+  --bg:            #0b0b0b;
+  --bg-card:       #141414;
+  --bg-card-hover: #1a1a1a;
+  --bg-sub:        #1e1e1e;
+  --border:        rgba(255,255,255,0.07);
+  --border-hover:  rgba(255,255,255,0.13);
+  --copper:        #C8885A;
+  --copper-light:  #daa882;
+  --copper-dim:    rgba(200,136,90,0.15);
+  --copper-glow:   rgba(200,136,90,0.08);
+  --text-primary:  #f0ece6;
+  --text-secondary:#8a8680;
+  --text-muted:    #4a4844;
+  --success:       #4a9e6e;
+  --radius:        12px;
+  --radius-sm:     8px;
+
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 400;
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/*
+  Navigation bar style
+  Sticky top nav for roadmap navigation and branding
+*/
+.rp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(11,11,11,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid var(--border);
+}
+.rp-nav-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 40px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.rp-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  cursor: pointer;
+  user-select: none;
+}
+.rp-logo span { color: var(--copper); }
+
+.rp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0; padding: 0;
+}
+.rp-nav-links a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s;
+}
+.rp-nav-links a:hover { color: var(--text-primary); }
+.rp-nav-links a.active {
+  color: var(--copper);
+  padding: 4px 14px;
+  border: 0.5px solid rgba(200,136,90,0.4);
+  border-radius: 20px;
+}
+
+/*
+  Decorative gradient line below the navbar for visual separation
+  Adds a subtle color accent under the nav
+*/
+.rp-gradient-line {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #5a9e7e, var(--copper), #b87399, transparent);
+  opacity: 0.6;
+}
+
+/*
+  Main wrapper for roadmap content
+  Sets max width and padding for the main roadmap area
+*/
+.rp-wrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 56px 40px 0 40px;
+}
+
+/*
+  Breadcrumb navigation for showing the user's current location
+  Displays the navigation path (Home > Roadmap)
+*/
+.rp-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 24px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.rp-bc-link {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.rp-bc-link:hover { color: var(--text-secondary); }
+.rp-bc-sep { color: var(--text-muted); }
+.rp-bc-current { color: var(--copper); }
+
+/*
+  Hero section — big title, icon, and tags for the selected roadmap
+  Contains the roadmap title, icon, and summary
+*/
+.rp-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 32px 0 40px;
+}
+.rp-hero-left { flex: 1; }
+.rp-hero-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  display: block;
+}
+.rp-hero-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 52px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
+}
+.rp-hero-title em {
+  font-style: italic;
+  color: var(--text-primary);
+}
+.rp-accent { color: var(--copper); font-style: normal; }
+
+.rp-hero-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  max-width: 420px;
+  line-height: 1.7;
+  margin-bottom: 20px;
+}
+.rp-hero-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rp-tag {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 0.5px solid var(--border-hover);
+  color: var(--text-secondary);
+}
+.rp-tag.active {
+  background: var(--copper-dim);
+  border-color: rgba(200,136,90,0.3);
+  color: var(--copper-light);
+}
+
+/*
+  Row of stats for the roadmap
+  Shows weeks, phases, and skills count
+*/
+.rp-stats-row {
+  display: flex;
+  background: var(--bg-card);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-width: 280px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 58px;
+}
+.rp-stat-item {
+  flex: 1;
+  padding: 20px 24px;
+  text-align: center;
+  border-right: 0.5px solid var(--border);
+}
+.rp-stat-item:last-child { border-right: none; }
+.rp-stat-val {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--copper);
+  line-height: 1;
+}
+.rp-stat-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/*
+  Progress bar and phase indicators for tracking roadmap completion
+  Visualizes user progress through the roadmap
+*/
+.rp-progress-section {
+  background: var(--bg-card);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 48px;
+}
+.rp-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.rp-progress-label {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.rp-progress-pct {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  color: var(--copper);
+}
+.rp-progress-track {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.rp-progress-fill {
+  height: 100%;
+  min-width: 4px;
+  background: linear-gradient(90deg, #5a9e7e, var(--copper));
+  border-radius: 2px;
+  transition: width 0.6s ease;
+}
+.rp-phase-indicators {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rp-phase-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.rp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.rp-phase-dot.done .rp-dot  { background: var(--success); }
+.rp-phase-dot.done           { color: var(--text-secondary); }
+.rp-phase-dot.active .rp-dot { background: var(--copper); }
+.rp-phase-dot.active         { color: var(--copper); }
+
+/*
+  Section label for roadmap sections
+*/
+.rp-section-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/*
+  Timeline for the roadmap phases
+  Vertical timeline showing each phase in order
+*/
+.rp-timeline {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.rp-timeline::before {
+  content: '';
+  position: absolute;
+  left: 19px;
+  top: 24px;
+  bottom: 24px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--copper), rgba(200,136,90,0.08), transparent);
+  pointer-events: none;
+}
+
+/*
+  Styles for each phase in the roadmap 
+*/
+.phase {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+  position: relative;
+}
+.phase-num-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  z-index: 1;
+}
+.phase-num {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 18px;
+  font-weight: 500;
+  border: 1px solid var(--border-hover);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  user-select: none;
+}
+.phase-num.done {
+  background: var(--bg-card);
+  border-color: rgba(74,158,110,0.35);
+  color: var(--success);
+}
+.phase-num.active {
+  background: var(--bg-card);
+  border-color: rgba(200,136,90,0.4);
+  color: var(--copper);
+  box-shadow: 0 0 18px rgba(200,136,90,0.12);
+}
+
+.phase-body {
+  flex: 1;
+  background: var(--bg-card);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s;
+  min-width: 0;
+}
+.phase-body:hover { border-color: var(--border-hover); }
+.phase-body.active-card {
+  border-color: rgba(200,136,90,0.25);
+  background: linear-gradient(135deg, #141414 0%, #161210 100%);
+}
+.phase-body.done-card {
+  border-color: rgba(74,158,110,0.18);
+}
+
+/*
+  Phase header
+*/
+.phase-header {
+  padding: 20px 22px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 0.5px solid var(--border);
+  user-select: none;
+}
+.phase-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+.phase-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.phase-header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.phase-badge {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.badge-done {
+  background: rgba(74,158,110,0.1);
+  color: var(--success);
+  border: 0.5px solid rgba(74,158,110,0.25);
+}
+.badge-active {
+  background: var(--copper-dim);
+  color: var(--copper);
+  border: 0.5px solid rgba(200,136,90,0.3);
+}
+.badge-upcoming {
+  background: rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  border: 0.5px solid var(--border);
+}
+.phase-chevron {
+  font-size: 18px;
+  color: var(--text-muted);
+  transition: transform 0.25s ease;
+  display: inline-block;
+  line-height: 1;
+}
+.phase-chevron.open { transform: rotate(90deg); }
+
+/*
+  Phase body 
+*/
+.phase-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.phase-col { padding: 18px 22px; }
+.phase-col:first-child { border-right: 0.5px solid var(--border); }
+.col-label {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/*
+  Skill pills
+*/
+.skills-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.skill-pill {
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: var(--bg-sub);
+  border: 0.5px solid var(--border);
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+.skill-pill.done {
+  background: var(--bg-sub);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.skill-pill.learned {
+  background: var(--bg-sub);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.skill-pill.current {
+  background: var(--bg-sub);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+/*
+  Milestone list 
+*/
+.milestone-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.milestone {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.m-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  font-size: 10px;
+}
+.m-icon.done    { background: rgba(74,158,110,0.15); color: var(--success);    border: 0.5px solid rgba(74,158,110,0.3); }
+.m-icon.active  { background: var(--copper-dim);     color: var(--copper);     border: 0.5px solid rgba(200,136,90,0.3); }
+.m-icon.pending { background: rgba(255,255,255,0.03); color: var(--text-muted); border: 0.5px solid var(--border); }
+
+/*
+  Resource chips
+*/
+.resource-row {
+  padding: 14px 22px;
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.resource-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  padding: 6px 14px 6px 10px;
+  border-radius: 8px;
+  background: var(--bg-sub);
+  border: 0.5px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+  user-select: none;
+}
+.resource-chip:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+.rc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.rc-video   { background: #b05e5e; }
+.rc-article { background: #5e7eb0; }
+.rc-project { background: #5ea07e; }
+.rc-course  { background: var(--copper); }
+
+/*
+  Footer and bottom bar for the roadmap page
+*/
+.rp-bottom-bar {
+  margin-top: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #5a9e7e, var(--copper), #b87399, transparent);
+  opacity: 0.5;
+}
+.rp-footer {
+  padding: 32px 0 40px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+}
+
+/*
+  Styles for the 'not found' page if a roadmap doesn't exist
+*/
+.rp-not-found { background: var(--bg); min-height: 100vh; }
+.rp-notfound-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  text-align: center;
+  padding: 40px;
+}
+.rp-notfound-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 32px;
+  color: var(--text-primary);
+}
+.rp-notfound-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.rp-back-btn {
+  margin-top: 8px;
+  padding: 10px 24px;
+  background: var(--copper-dim);
+  border: 0.5px solid rgba(200,136,90,0.3);
+  border-radius: var(--radius-sm);
+  color: var(--copper-light);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.rp-back-btn:hover { background: rgba(200,136,90,0.22); }
+
+/*
+  Sidebar for skill notes — slides in from the right
+*/
+.rp-skill-sidebar {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 420px;
+  height: 100vh;
+  background: var(--bg-card);
+  border-left: 0.5px solid var(--border);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  transition: right 0.3s ease;
+  overflow-y: auto;
+}
+.rp-skill-sidebar.open {
+  right: 0;
+}
+.rp-skill-sidebar-header {
+  padding: 24px;
+  border-bottom: 0.5px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+.rp-skill-sidebar-header h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+  color: var(--text-primary);
+  flex: 1;
+}
+.rp-skill-close-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-sub);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.rp-skill-close-btn:hover {
+  background: rgba(200,136,90,0.15);
+  color: var(--copper);
+}
+.rp-skill-sidebar-content {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+.rp-skill-section {
+  margin-bottom: 24px;
+}
+.rp-skill-section:last-child {
+  margin-bottom: 0;
+}
+.rp-skill-section h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 12px 0;
+  color: var(--copper);
+  letter-spacing: 0.02em;
+}
+.rp-skill-section p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.rp-skill-topics,
+.rp-skill-resources {
+  margin: 0;
+  padding-left: 20px;
+  list-style: disc;
+}
+.rp-skill-topics li,
+.rp-skill-resources li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.rp-skill-resources a {
+  color: #C88A72;
+  text-decoration: underline;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.rp-skill-resources a:hover {
+  color: #E0A080;
+  background-color: rgba(200, 138, 114, 0.1);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+.rp-skill-topics li::marker,
+.rp-skill-resources li::marker {
+  color: var(--copper);
+}
+
+/*
+  Responsive breakpoints for tablets and mobile
+  Adjusts layout and sidebar for smaller screens
+*/
+@media (max-width: 1000px) {
+  .rp-skill-sidebar {
+    width: 360px;
+    right: -360px;
+  }
+}
+@media (max-width: 700px) {
+  .rp-nav-inner { padding: 0 20px; }
+  .rp-nav-links { gap: 16px; font-size: 11px; }
+  .rp-skill-sidebar {
+    width: 100%;
+    right: -100%;
+  }
+  .rp-skill-sidebar.open {
+    right: 0;
+  }
+  .rp-wrapper { padding: 0 20px; }
+  .rp-hero { flex-direction: column; }
+  .rp-stats-row { margin-top: 8px; width: 100%; }
+  .rp-hero-title { font-size: 38px; }
+  .phase-content { grid-template-columns: 1fr; }
+  .phase-col:first-child { border-right: none; border-bottom: 0.5px solid var(--border); }
+  .rp-timeline::before { left: 19px; }
+  .rp-phase-indicators { gap: 6px; }
+  .rp-phase-dot { font-size: 10px; }
+}

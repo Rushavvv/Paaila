@@ -1,0 +1,31 @@
+{
+  "dependencies": {
+    "docx": "^9.6.1",
+    "dompurify": "^3.3.3",
+    "react-quill": "^2.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.5.2"
+  },
+  "scripts": {},
+  "name": "projecxtfinal",
+  "version": "1.0.0",
+  "description": "A web-based chatbot that allows users to upload PDFs and ask questions about the document. The chatbot uses Google Vertex AI Generative API via LangChain to generate answers from PDF content. The frontend displays responses in a modern chat-bubble interface similar to WhatsApp or Instagram.",
+  "main": "playwright.config.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rushavvv/Paaila.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Rushavvv/Paaila/issues"
+  },
+  "homepage": "https://github.com/Rushavvv/Paaila#readme"
+}

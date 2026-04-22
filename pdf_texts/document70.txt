@@ -1,0 +1,275 @@
+Standard Operating
+Procedures (SOP)
+Client Relationship
+Manager(CRM)About Rodhi
+At Rodhi Sources, we are more than just an import company; we are a hope and a
+ladder of success for countless individuals and businesses. For too long, the import
+industry has been complex and challenging, but we are here to change that. We are
+dedicated to solving the long-standing problems that hold people back, providing a
+path to success built on quality, professional, and dedicated support. Our mission
+is to empower you by offering expert guidance on every step of the import process,
+ensuring you can navigate the market with confidence. We believe that your
+success is our success, and together, we can unlock a future of limitless
+possibilities.
+SUPPORT         |          SUCCESS          |           SATISFACTIONOur Core Values
+Our core values—Support, Success, and Satisfaction—are what we live by. We are
+here to support our clients by giving them honest and clear advice, which helps us
+build strong, trusting relationships. Our main goal is their success; we see their wins
+as our wins and their growth as our growth. We promise to make sure they are
+always happy and satisfied with our work by consistently trying to do better than
+they expect. Everything we do comes down to these three simple ideas.
+Your Roles is our success
+The warehouse team is the backbone of Rodhi. You are the final point of contact
+with our clients, and your work—every step you take—is what they see and
+remember. By carefully receiving, organizing, and shipping each item, you ensure
+our whole operation runs smoothly. Your speed and accuracy directly lead to happy
+customers who get their products on time. Without your dedication and hard work,
+our clients' products would never reach thepeople who need them, and our
+company couldn't grow. Your role is truly essential to our success.SUPPORT         |          SUCCESS          |           SATISFACTION
+Order’s Flowchart
+Leads added by Front desk Officers
+CRM Assigned the lead
+Quotation forwarded to lead
+Converted and Order created by CRM
+Products received at China’s
+Warehouse
+Create Packing List
+Shipment Create
+Custom Clearnce
+Arrived At Kathmandu
+Warehouse
+Invoice send by accountant as per
+Quotation
+Accountant will call client to
+inform
+Products Dispatch
+Payment done by client
+Product delivered by Client
+Front Desk officer call for each
+client for Shipment experiencesSUPPORT         |          SUCCESS          |           SATISFACTION
+After Products Recived at Kathmandu Warehouse
+Arrival at Kathmandu Warehouse
+Accountant call each client to
+inform
+WOM/WOM count,re-pack by
+attaching Shipping Label
+Accountant forward invoice to client.
+After payment Received
+Accountant released the package
+WOM/WOA get notified
+WOM contact client for dispatch
+Send Location of warehouse on
+whatsapp
+Schedule for pick up by 3PL/Ride
+sharing app/Courier
+Track that shipment
+Make products ready and keep
+on Holding area
+Change status to “Deliverd”
+Send delivery slip to Front
+desk after delivered
+Provide delivery slip to client
+Change status to “Picked Up by
+Client”
+Client want to pick up at
+warehouse
+Client want it to delivery by
+ourselfRoles and Responsibility of Accountant
+Responsible for managing client financial communications, processing invoices and
+payments, maintaining accurate financial records, and coordinating closely with the
+Finance Officer and Warehouse team to ensure smooth financial operations and product
+release.
+Key Responsibilities:
+1. Client Communication (Post-Arrival & Dispatch):
+Shipment Arrival Notification: Contact clients upon shipment arrival at the warehouse
+to inform them that products have been received and will be dispatched once payment
+is confirmed.
+Invoice Forwarding: Forward the finalized invoice (prepared by the Finance Officer) to
+the client.
+VAT Bill Issuance: Issue the VAT bill to the client upon confirmation of payment and
+product release, after necessary communication.
+2. Invoice & Payment Management:
+Payment Receipt: Receive and record client payments.
+Payment Verification & Product Release: Verify payment receipt with the Finance
+Officer and, upon confirmation, update the system to release products for dispatch.
+Data Entry & Bookkeeping: Accurately record all financial transactions (e.g., payments,
+expenses) into Tally software or other accounting systems.
+3. Internal Coordination & Problem Resolution:
+Financial Discrepancy Reporting: Immediately inform the Finance Officer about any
+missing products, discrepancies in received goods, or issues that may lead to a refund.
+Problem Coordination: Coordinate closely with the Finance Officer on resolving any
+financial problems, payment issues, or refund processes.
+Warehouse Liaison (Financial Aspect): Work with the Warehouse team to confirm
+product receipt details relevant to invoicing and to ensure products are ready for
+release post-payment.
+4. Record Keeping & Compliance Support:
+Financial Record Maintenance: Maintain organized and accessible records for all
+invoices, payments, and related financial documents.
+Basic Financial Support: Assist the Finance Officer with routine financial tasks and data
+retrieval as required.
+SUPPORT         |          SUCCESS          |           SATISFACTIONKey Performance Areas:
+Timeliness and clarity of client financial communications.
+Accuracy of payment recording and product release.
+Efficiency in coordinating financial issues with the Finance Officer.
+Adherence to financial procedures for VAT bill issuance and payment
+verification.
+SUPPORT         |          SUCCESS          |           SATISFACTIONCall and Messaging Formate
+After products received at Warehouse
+Namsate sir/ma’am. Ma rodhi Sources ko warehouse bata Rupesh boldae chu, hajur ko
+saaman hamro warehouse ma receive bhayeko cha, sayad hajur le SMS marfat pani
+update paunu bhayo hola.
+Aba hami tapai ko saaman count garera repack garne chau, ra saaman haru kehi missing
+wa damage bhayeko paiyema hajur lai inform hune cha ra tapai ko payment haru
+complete bhayepachi delivery ko lagi process garne chau, ra payment ra invoice ko lagi
+chai hajur lai ma chitai message garne chu,
+Ra saaman ko bare, delivery wa pick up ko lagi tapai le malai yahi number ma call garna
+saknu hune cha
+Thank you sir/ma’am.
+Message format 1
+Rodhi warehouse ko location, Sukedhara chowk bata 1 km jati vittra raheko cha, hajur le
+yo diyeko link ma visit gari rodhi warehouse aauna saknu huncha
+https://maps.app.goo.gl/H4EN2B2ntXEw4Dei9
+Location ma confuse bhayema: 9802399639 wa 9802377482 ma call garnu hola. Thank
+you
+Invoice Forward Formate
+Namaste Sir/Ma'am,
+This is Rupesh from Rodhi Sources Account team.
+Your invoice for the import cost is ready, as per our quotation. Please make the
+payment for this invoice. Once paid, we will prepare your order for delivery. You will
+receive a VAT bill with your products.
+To pay your invoice, please let us know how you prefer:
+Business Account: We will send you our business account details.
+Personal Account: We will send you our personal account details. (Note: We do not
+promote using personal accounts for business payments.)Before calling, verify all client details: amount, order number, invoice number,
+and tracking information.
+Begin the call by stating your name and company. Address clients as "Sir" or
+"Ma'am. " Example: "Namaste, Sir/Ma'am, ma Rodhi warehouse bata Rupesh
+boldaechu. "
+Pay attention to the client's questions and responses to build a good
+relationship.
+Repeat important information back to the client to avoid any confusion.
+End the call by explaining what will happen next. Example: "Ma hajur ko invoice
+yahi number ko WhatsApp ma send garidinchu. "
+If a client asks about delays or new products, politely explain that you will have
+their CRM contact them. Be sure to then send a message to the "warehouse
+team" group.
+Maintain a calm and professional tone throughout the call, even with difficult
+clients.
+SUPPORT         |          SUCCESS          |           SATISFACTIONRoles and Responsibility of Warehouse Operation
+Manager(WOM)/Warehouse Operation Assistant
+Customs & Inbound Products
+Customs Clearance: Go to the customs office to clear products. Monitor the process
+to prevent damage or loss.
+Safe Transport: Ensure all products are safely transported from customs to the
+warehouse. 
+Inventory Management
+Receive & Count: Count all products upon arrival at the warehouse, using the
+packing list. 
+Shipping Label: Generate and attach a shipping label from Rodhi Sync to each
+product.
+Product Storage: Store all products safely and in an organized, easy-to-manage way.
+Client & Dispatch Coordination
+Client Communication: After the accountant releases a package, contact the client
+to arrange dispatch.
+Delivery Arrangement: Book ride-sharing apps like Pathao/Indrive for deliveries as
+per client requests, and share the tracking link with the client.3PL Coordination: Request pickup from 3PL partners, provide the delivery
+location, and send the tracking link to the client for tracking.
+Delivery Confirmation: Follow up with the client after dispatch to confirm that
+the product has been delivered.
+Ready for Pickup: For clients picking up products, prepare the package and
+place it in the designated holding area.
+Team & Paperwork
+Team Coordination: Work with the warehouse and head office teams to ensure
+work is smooth and efficient.
+Delivery Slips: Fill out a delivery slip for every product that leaves the
+warehouse, and forward it to the head office team's front desk for the shipment
+experiences survey.
+Safety & Maintenance: Keep the warehouse clean and safe at all times. Properly
+use and maintain all warehouse equipment.
+Must follow these rules
+Always wear ID card and dress provided by Company.
+Treat every client's product as if it were your own. Handle all packages carefully
+to prevent damage.
+Take ownership of every task, from receiving to delivery. Your accuracy directly
+impacts client satisfaction.
+Use the "warehouse team" chat group for all important updates. Coordinate
+with the accountant and head office to ensure everyone is on the same page.
+Double-check every item against the packing list and shipping label before
+dispatch. This prevents mistakes and wasted time.
+If you are unsure about a task, a product's location, or a client's request, do not
+guess. Ask the WOM or another team member for help.
+Avoid rushing or being careless, as this can lead to damage. Report any
+damaged items immediately.
+All questions about delays, new products, or other issues should be redirected
+to the client's CRM.
+Do not use informal language or slang in professional communication, including
+internal chat groups.
+SUPPORT         |          SUCCESS          |           SATISFACTIONCall and Messaging Formate
+After release by Accountant and before delivery
+Namaste sir/ma’am. Ma Rodhi Sources ko warehouse bata Bipul boldae chu,
+hajur ko saaman ko payment receive bhayeko cha, ra aba hami saaman dispatch
+ko lagi process gardae chau, hajur le saaman delivery ko lagi k garna chahunu
+huncha?
+Hamro end bata delivery garna chahunu huncha bhane hami hamro 3rd party
+logisitic partner Elite Logisitic marfat garidinchau, jun delivery ko lagi 24-48
+hours time lagna sakcha, wa tapai ko saaman transport ma pani send
+garidinchau
+Ra tesko cost chai hajur le bhornu parne huncha.
+Hajur kathmandu mai hunuhuncha bhane hamro warehouse ma aayera pick up
+pani saknu huncha,
+SUPPORT         |          SUCCESS          |           SATISFACTIONCost and time of delivery
+Namaste sir/ma’am. Ma Rodhi Sources ko warehouse bata Sabin/Bipul boldae
+chu, Hajur ko saaman dispatch ko lagi ready hudaecha, hajur ko 3PL bata
+phatauna ko lagi___ charge lagne rahecha / Indrive/pathao ma
+phatauda____charge lagne rahecha, transport ma phatauda__charge lagne
+rahecha,
+Hajur ko saaman recived kasle garnu huncha? Hajur le aafai garnu huncha ki aru
+koi hunuhuncha, malai receive garnu hune ko contact number send garidinus na,
+Ma yaha bata saaman hinepachi uha/tapai lai saaman ko photo sahit tapai ko ma
+delivery ko details provide garne chu,
+Thank you
+After deliver
+Namaste sir/ma’am. Ma Rodhi Sources ko warehouse bata Sabin/Bipul boldae
+chu, hajur le saaman receive garnu bhayo hola? Huncha saaman haru kehi
+missing wa damage bhayema malai yahi number ma contact garnu hola,
+Thank you for importing products with us.Message formate1
+Warehouse location
+Rodhi warehouse ko location, Sukedhara chowk bata 1 km jati vittra raheko cha,
+hajur le yo diyeko link ma visit gari rodhi warehouse aauna saknu huncha
+https://maps.app.goo.gl/H4EN2B2ntXEw4Dei9
+Location ma confuse bhayema: 9802399639 wa 9802377482 ma call garnu hola.
+Thank youTracking number
+Namaste sir/ma’am, hajur ko saaman hamro warehouse bata dispatch bhayeko
+cha, yo link bata hajur ko aafno saaman ko tracking garna saknu huncha.
+Tracking Link: ______________
+SUPPORT         |          SUCCESS          |           SATISFACTIONSUPPORT         |          SUCCESS          |           SATISFACTIONImportant Contacts & Additional Information
+This section provides essential contact details and references for Front Desk
+Officers to ensure smooth operations and effective escalation.
+Key In ternal Contacts
+Arbin Khadka- Chief Operating Officer(9804360634)  - For all immediate
+operational issues, complex client situations, or when unsure about a
+response.
+Anil Khadka- Head of Import(9801359734):  For reconfirming customs
+details,
+complex freight queries, or specific import process questions
+Ram Kumar Shrestha(9802315216) and Rohit Rauniyar(980231 5215) CRM:
+For urgent lead handover issues or clarification on lead qualification.
+Parivesh Poudel (9801919251)Finance Department:  - For any client billing
+inqui ries that the FDO cannot answer directly.
+Pawan Neupane- Marketing Support (9848534712):  For marketing issues.
+Warehouse Team (+977 980-2399639/9802377482):  - For clients who want
+to call directly for quick dispatch after billing (as per SMS notification).
+Rodhi Sources Company Information
+Main Office Address:  Dhumbarahi, Kathmandu
+Warehouse Addess:  Sukedhara, Near Rave Futsal, Kathmandu
+General Company Contact Number:  01-5915806, 9801976688,
+9802377483, 9801359733, 9768994140
+Number used for SMS:  9801359733, 9768994140
+General Company Email:  rodhisources@gmail.com
+Marketing and other email:  marketingatrodhi@gmail.com
+Sales:  salesrodhisources@gmail.com / rohit.rodhi584@gmail.com
+Official Website:  www.rodhisources.com
+Official WhatsApp Number:  9801976688, 9802377483Let's simplify imports with outstanding
+support, enabling clients to succeed smoothly
+and swiftly while ensuring their utmost
+satisfaction!

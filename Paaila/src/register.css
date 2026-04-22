@@ -1,0 +1,422 @@
+/*
+  Register Page Stylesheet
+  -----------------------
+  This file contains all styles for the registration page, including layout, navigation, form, and responsive design.
+  Each section is clearly marked for easy navigation and maintainability.
+*/
+
+/*
+  CSS Variables for color palette and fonts
+  These variables make it easy to update the theme across the register page.
+*/
+:root {
+  --bg: #08090C;
+  --panel: #0F1117;
+  --card: #141820;
+  --border: rgba(255, 255, 255, 0.06);
+  --border2: rgba(255, 255, 255, 0.10);
+  --blue-accent: #4A9EFF;
+  --blue-accent-d: rgba(74, 158, 255, 0.12);
+  --blue-accent-m: rgba(74, 158, 255, 0.25);
+  --green: #22C97A;
+  --green-d: rgba(34, 201, 122, 0.10);
+  --red: #FF5252;
+  --red-d: rgba(255, 82, 82, 0.10);
+  --cream: #E8E2D9;
+  --muted: #5C6070;
+  --muted2: #8A8FA0;
+  --syne: 'Sora', sans-serif;
+  --mono: 'Plus Jakarta Sans', sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--cream);
+  font-family: var(--mono);
+}
+
+.register-container {
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg,
+    #0b0b0b 0%,
+    #0b0b0b 50%,
+    rgba(12, 11, 10, 0.98) 54%,
+    rgba(15, 12, 9, 0.97) 58%,
+    rgba(18, 14, 8, 0.96) 62%,
+    rgba(20, 15, 8, 0.95) 66%,
+    rgba(22, 16, 9, 0.94) 70%,
+    rgba(25, 17, 9, 0.93) 74%,
+    rgba(28, 19, 11, 0.92) 78%,
+    rgba(32, 21, 13, 0.91) 82%,
+    rgba(35, 24, 15, 0.90) 86%,
+    rgba(40, 27, 17, 0.89) 90%,
+    rgba(45, 30, 19, 0.88) 94%,
+    rgba(48, 32, 20, 0.87) 97%,
+    rgba(52, 35, 22, 0.86) 100%
+  );
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  width: 100%;
+}
+
+/* ─── Navigation Menu Bar ──────────────────────────────────────────────────── */
+.menu-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(9, 9, 10, 0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+
+.menu-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.menu-logo {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: var(--syne);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cream);
+}
+
+.logo-text {
+  color: var(--cream);
+}
+
+.menu-links {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+}
+
+.menu-link {
+  text-decoration: none;
+  color: var(--muted2);
+  font-size: 0.9rem;
+  transition: color 0.2s;
+  cursor: pointer;
+}
+
+.menu-link:hover {
+  color: var(--blue-accent);
+}
+
+.menu-link.active {
+  color: var(--blue-accent);
+  font-weight: 600;
+}
+
+/* ─── Register Content ─────────────────────────────────────────────────────── */
+.register-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-background-grid {
+  position: absolute;
+  inset: 0;
+  opacity: 1;
+  background: linear-gradient(
+    135deg,
+    #0b0b0b 0%,
+    #0b0b0b 50%,
+    rgba(12, 11, 10, 0.98) 54%,
+    rgba(15, 12, 9, 0.97) 58%,
+    rgba(18, 14, 8, 0.96) 62%,
+    rgba(20, 15, 8, 0.95) 66%,
+    rgba(22, 16, 9, 0.94) 70%,
+    rgba(25, 17, 9, 0.93) 74%,
+    rgba(28, 19, 11, 0.92) 78%,
+    rgba(32, 21, 13, 0.91) 82%,
+    rgba(35, 24, 15, 0.90) 86%,
+    rgba(40, 27, 17, 0.89) 90%,
+    rgba(45, 30, 19, 0.88) 94%,
+    rgba(48, 32, 20, 0.87) 97%,
+    rgba(52, 35, 22, 0.86) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.register-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 540px;
+  padding: 48px 40px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  margin: 0 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.register-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.register-title {
+  font-family: var(--syne);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--cream);
+  margin-bottom: 8px;
+}
+
+.register-subtitle {
+  font-size: 14px;
+  color: var(--muted2);
+  letter-spacing: 0.02em;
+}
+
+.register-error {
+  padding: 12px 16px;
+  background: var(--red-d);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  border-radius: 8px;
+  color: var(--red);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.register-success {
+  padding: 12px 16px;
+  background: var(--green-d);
+  border: 1px solid rgba(34, 201, 122, 0.3);
+  border-radius: 8px;
+  color: var(--green);
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+/* ─── Form Styles ──────────────────────────────────────────────────────────── */
+.register-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group:nth-child(1) {
+  grid-column: 1 / 2;
+}
+
+.form-group:nth-child(2) {
+  grid-column: 2 / 3;
+}
+
+.form-group:nth-child(3) {
+  grid-column: 1 / 2;
+}
+
+.form-group:nth-child(4) {
+  grid-column: 2 / 3;
+}
+
+.form-group:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cream);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  
+}
+
+.form-input {
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 13px;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--blue-accent);
+  box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--muted);
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--muted2);
+  letter-spacing: 0.02em;
+}
+
+.form-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted2);
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--blue-accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.checkbox-label {
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.terms-link {
+  color: var(--blue-accent);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.terms-link:hover {
+  color: #74B8FF;
+}
+
+.register-btn {
+  background: #C77757;
+  border: 1px solid #C77757;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--syne);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100px;
+  height: 50px;
+  margin: 25px auto 0;
+  display: block;
+}
+
+
+
+.register-btn:hover:not(:disabled) {
+  background: #B96E50;
+  border-color: #B96E50;
+  box-shadow: 0 8px 22px rgba(199, 119, 87, 0.32);
+}
+
+.register-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.register-divider {
+  position: relative;
+  margin: 24px 0;
+  text-align: center;
+}
+
+.register-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.register-divider span {
+  position: relative;
+  background: var(--panel);
+  padding: 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.register-social {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.social-btn {
+  padding: 12px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--cream);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.social-btn:hover {
+  border-color: var(--blue-accent);
+  background: rgba(74, 158, 255, 0.05);
+}
+
+.register-footer {
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted2);
+}
+
+.login-link {
+  color: var(--blue-accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.login-link:hover {
+  color: #74B8FF;
+}
+
