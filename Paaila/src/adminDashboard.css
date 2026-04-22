@@ -959,6 +959,18 @@ td.email-cell {
 /* ══════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1440px) {
+  .admin-content  { max-width: 1120px; padding: 84px 28px 72px; }
+  .menu-container { padding: 0 24px; }
+  .stat-card      { padding: 24px 24px 20px; }
+  .admin-title    { font-size: clamp(1.9rem, 3.6vw, 3rem); }
+}
+
+@media (max-width: 1280px) {
+  .admin-content { padding: 80px 24px 64px; }
+  .stat-grid     { gap: 12px; }
+}
+
 @media (max-width: 900px) {
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .admin-content { padding: 80px 20px 60px; }

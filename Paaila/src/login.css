@@ -259,6 +259,17 @@ body {
   color: var(--muted);
 }
 
+@media (max-width: 1440px) {
+  .menu-container { padding: 0 24px; }
+  .login-card     { max-width: 480px; padding: 44px 36px; }
+  .menu-links     { gap: 24px; }
+}
+
+@media (max-width: 1280px) {
+  .login-card { max-width: 440px; padding: 40px 32px; }
+  .login-title { font-size: 26px; }
+}
+
 
 
 /* Checkbox label style */

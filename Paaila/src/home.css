@@ -632,6 +632,20 @@ body {
   Responsive breakpoints for tablets and mobile
   Adjusts grid columns and padding for smaller screens
 */
+@media (max-width: 1440px) {
+  .main-content { max-width: 1320px; padding: 112px 28px 76px; }
+  .roles-grid   { grid-template-columns: repeat(3, 1fr); }
+  .info-content { grid-template-columns: repeat(2, 1fr); }
+  .bg-glow      { width: 720px; height: 540px; }
+}
+
+@media (max-width: 1280px) {
+  .main-content    { max-width: 1180px; padding: 104px 24px 72px; }
+  .header-section  { margin-bottom: 48px; }
+  .search-container { max-width: 560px; }
+  .role-card       { padding: 24px 18px 22px; }
+}
+
 @media (max-width: 1024px) {
   .roles-grid  { grid-template-columns: repeat(2, 1fr); }
   .info-content { grid-template-columns: 1fr; }

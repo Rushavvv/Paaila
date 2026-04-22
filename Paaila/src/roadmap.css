@@ -752,6 +752,22 @@
   Responsive breakpoints for tablets and mobile
   Adjusts layout and sidebar for smaller screens
 */
+@media (max-width: 1440px) {
+  .rp-nav-inner { padding: 0 32px; }
+  .rp-wrapper   { padding: 48px 32px 0; }
+  .rp-hero      { gap: 32px; }
+  .rp-hero-title { font-size: 46px; }
+  .rp-stats-row { margin-top: 48px; }
+}
+
+@media (max-width: 1280px) {
+  .rp-nav-inner  { padding: 0 24px; }
+  .rp-wrapper    { padding: 44px 24px 0; }
+  .rp-hero       { gap: 28px; }
+  .rp-hero-title { font-size: 42px; }
+  .rp-hero-sub   { max-width: 380px; }
+}
+
 @media (max-width: 1000px) {
   .rp-skill-sidebar {
     width: 360px;
